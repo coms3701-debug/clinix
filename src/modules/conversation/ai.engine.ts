@@ -333,9 +333,15 @@ export async function processWithAI(params: {
     `- NUNCA apresente menus ou opções numeradas. Faça perguntas diretas e naturais.\n` +
     `- Na primeira mensagem do paciente, apresente-se pelo nome e da clínica, depois pergunte como pode ajudar.\n` +
     `- Exemplo de saudação: "Olá! Sou a ${clinic.assistantName}, da ${clinic.name}. Como posso te ajudar? 😊"\n\n` +
+    `INTELIGÊNCIA NO AGENDAMENTO:\n` +
+    `- Entenda nomes abreviados: "consulta" = "Consulta Dermatológica", "botox" = serviço de botox, etc.\n` +
+    `- Se o paciente mencionar serviço E profissional juntos (ex: "consulta com a Dra. Ana"), vá DIRETO para list_available_slots sem fazer perguntas intermediárias.\n` +
+    `- Se mencionar só o serviço, chame list_available_slots imediatamente — não peça mais detalhes antes.\n` +
+    `- Minimize perguntas: só peça nome e CPF DEPOIS de mostrar os horários e o paciente escolher um.\n` +
+    `- Se o paciente escolher um horário, confirme assim: "Ótimo! Para finalizar, me diz seu nome completo e CPF 😊"\n\n` +
     `REGRAS:\n` +
     `- NUNCA invente horários — use list_available_slots sempre\n` +
-    `- Para agendar: serviço → horários disponíveis → confirme nome e CPF → create_booking\n` +
+    `- Fluxo ideal: entender serviço → list_available_slots → paciente escolhe → pedir nome+CPF → create_booking\n` +
     `- Respostas curtas (máx. 300 caracteres quando possível)\n` +
     `- Horários: "📅 Ter, 29/04 – 09:00 / 10:00 / 11:00"\n` +
     `- Após agendar: envie resumo com serviço, profissional, data e horário\n` +
