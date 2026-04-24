@@ -367,8 +367,10 @@ export async function processWithAI(params: {
         const { name, args } = part.functionCall!;
         console.log(`[AI Engine Gemini] Tool: ${name}`, args);
         const result = await executeTool(name, args, toolCtx);
+        // Gemini exige que functionResponse.response seja sempre um objeto (nunca array)
+        const responseObj = Array.isArray(result) ? { result } : (result as object);
         responseParts.push({
-          functionResponse: { name, response: result },
+          functionResponse: { name, response: responseObj },
         });
       }
 
