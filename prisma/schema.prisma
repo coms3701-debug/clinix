@@ -1,0 +1,259 @@
+// Schema Prisma — Clinix
+// Multi-tenant: cada Clinic é um tenant isolado logicamente.
+// A chave de tenancy é clinicId em todas as entidades abaixo.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// CLÍNICA (tenant)
+// ─────────────────────────────────────────────────────────────
+model Clinic {
+  id                String   @id @default(cuid())
+  name              String
+  slug              String   @unique
+  specialty         Specialty
+  timezone          String   @default("America/Sao_Paulo")
+  address           String?
+  // Número de WhatsApp da clínica (na Thúlio). Usado para rotear webhooks.
+  whatsappNumber    String   @unique
+  // Assistente virtual: nome e tom de voz
+  assistantName     String   @default("Clara")
+  // Configurações de negócio
+  allowOnlinePayment Boolean @default(false)
+  reminderHourLocal  Int     @default(18) // hora local para mandar lembrete da véspera
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  professionals     Professional[]
+  services          Service[]
+  patients          Patient[]
+  appointments      Appointment[]
+  conversations     Conversation[]
+  waitlistEntries   WaitlistEntry[]
+
+  @@index([whatsappNumber])
+}
+
+enum Specialty {
+  DERMATOLOGY
+  DENTISTRY
+  BOTH
+}
+
+// ─────────────────────────────────────────────────────────────
+// PROFISSIONAL (médico/dentista)
+// ─────────────────────────────────────────────────────────────
+model Professional {
+  id           String   @id @default(cuid())
+  clinicId     String
+  clinic       Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  name         String
+  registration String   // CRM, CRO, etc.
+  bio          String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workSchedules WorkSchedule[]
+  appointments  Appointment[]
+  services      ProfessionalService[]
+
+  @@index([clinicId, active])
+}
+
+// Horário semanal de trabalho (um por dia da semana, múltiplos blocos se quiser)
+model WorkSchedule {
+  id             String   @id @default(cuid())
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  dayOfWeek      Int      // 0=Domingo ... 6=Sábado
+  startTime      String   // "HH:MM" local
+  endTime        String   // "HH:MM" local
+  // Duração default de cada slot em minutos (ex: 30)
+  slotMinutes    Int      @default(30)
+
+  @@index([professionalId, dayOfWeek])
+}
+
+// ─────────────────────────────────────────────────────────────
+// SERVIÇO (tipo de consulta/procedimento)
+// ─────────────────────────────────────────────────────────────
+model Service {
+  id            String   @id @default(cuid())
+  clinicId      String
+  clinic        Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?
+  durationMin   Int      // duração em minutos (múltiplo do slot)
+  priceCents    Int      @default(0)
+  active        Boolean  @default(true)
+  // Dermatologia: pedir fotos na triagem?
+  requestsTriagePhotos Boolean @default(false)
+
+  professionals ProfessionalService[]
+  appointments  Appointment[]
+
+  @@index([clinicId, active])
+}
+
+// Quais serviços cada profissional atende
+model ProfessionalService {
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  serviceId      String
+  service        Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([professionalId, serviceId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// PACIENTE
+// ─────────────────────────────────────────────────────────────
+model Patient {
+  id             String   @id @default(cuid())
+  clinicId       String
+  clinic         Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  fullName       String?
+  cpf            String?
+  email          String?
+  whatsappNumber String   // número internacional: +5511999999999
+  birthDate      DateTime?
+  // LGPD: consentimento do paciente em receber mensagens
+  lgpdConsentAt  DateTime?
+  // Score de risco de no-show (0..1) — atualizado por job
+  noShowRisk     Float    @default(0.0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  appointments   Appointment[]
+  conversations  Conversation[]
+  waitlistEntries WaitlistEntry[]
+
+  @@unique([clinicId, whatsappNumber])
+  @@index([clinicId, cpf])
+}
+
+// ─────────────────────────────────────────────────────────────
+// AGENDAMENTO
+// ─────────────────────────────────────────────────────────────
+model Appointment {
+  id             String   @id @default(cuid())
+  clinicId       String
+  clinic         Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id])
+  patientId      String
+  patient        Patient  @relation(fields: [patientId], references: [id])
+  serviceId      String
+  service        Service  @relation(fields: [serviceId], references: [id])
+  startsAt       DateTime // UTC
+  endsAt         DateTime // UTC
+  status         AppointmentStatus @default(SCHEDULED)
+  // Para no-show prediction
+  remindersSent  Int      @default(0)
+  confirmedAt    DateTime?
+  cancelledAt    DateTime?
+  cancelReason   String?
+  // Pagamento antecipado (diferencial)
+  paymentStatus  PaymentStatus @default(NONE)
+  paymentRef     String?
+  // Triagem (derm): fotos/descrição de sintomas
+  triageNotes    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([clinicId, startsAt])
+  @@index([professionalId, startsAt])
+  @@index([status, startsAt])
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  NONE
+  PENDING
+  PAID
+  REFUNDED
+}
+
+// ─────────────────────────────────────────────────────────────
+// CONVERSA (estado do chatbot por paciente)
+// ─────────────────────────────────────────────────────────────
+model Conversation {
+  id         String   @id @default(cuid())
+  clinicId   String
+  clinic     Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patientId  String?
+  patient    Patient? @relation(fields: [patientId], references: [id])
+  whatsappNumber String
+  state      String   @default("IDLE")
+  // Estado do fluxo serializado (serviço escolhido, data, etc.)
+  context    Json     @default("{}")
+  lastMessageAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  messages   Message[]
+
+  @@unique([clinicId, whatsappNumber])
+  @@index([lastMessageAt])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  direction      MessageDirection
+  body           String
+  // Referência externa ao ID da mensagem na Thúlio (para idempotência)
+  providerMessageId String? @unique
+  createdAt      DateTime @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+enum MessageDirection {
+  INBOUND  // do paciente para a clínica
+  OUTBOUND // da clínica para o paciente
+}
+
+// ─────────────────────────────────────────────────────────────
+// LISTA DE ESPERA (diferencial)
+// ─────────────────────────────────────────────────────────────
+model WaitlistEntry {
+  id             String   @id @default(cuid())
+  clinicId       String
+  clinic         Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patientId      String
+  patient        Patient  @relation(fields: [patientId], references: [id])
+  professionalId String?
+  serviceId      String?
+  // Preferências do paciente
+  preferredFrom  DateTime?
+  preferredTo    DateTime?
+  status         WaitlistStatus @default(WAITING)
+  createdAt      DateTime @default(now())
+  notifiedAt     DateTime?
+
+  @@index([clinicId, status])
+}
+
+enum WaitlistStatus {
+  WAITING
+  NOTIFIED
+  FULFILLED
+  EXPIRED
+}

@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guia: Número WhatsApp Business Próprio — Clinix</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f7fa; color: #1a1a2e; }
+
+  .cover {
+    background: linear-gradient(135deg, #075e54 0%, #128c7e 60%, #25d366 100%);
+    color: white; padding: 60px 40px; text-align: center;
+  }
+  .cover .logo { font-size: 64px; margin-bottom: 16px; }
+  .cover h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+  .cover p { font-size: 16px; opacity: 0.9; max-width: 600px; margin: 0 auto; }
+  .cover .badge {
+    display: inline-block; background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.4);
+    padding: 6px 20px; border-radius: 20px; margin-top: 20px; font-size: 14px;
+  }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 40px 20px 60px; }
+
+  .intro-box {
+    background: white; border-radius: 12px; padding: 28px;
+    margin-bottom: 32px; border-left: 4px solid #25d366;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .intro-box h2 { color: #075e54; margin-bottom: 12px; font-size: 18px; }
+  .intro-box p { color: #444; line-height: 1.7; font-size: 15px; }
+
+  .benefits {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px; margin-bottom: 32px;
+  }
+  .benefit-card {
+    background: white; border-radius: 12px; padding: 20px; text-align: center;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .benefit-card .icon { font-size: 32px; margin-bottom: 10px; }
+  .benefit-card h3 { font-size: 13px; color: #075e54; font-weight: 600; }
+
+  .step-card {
+    background: white; border-radius: 12px; padding: 28px;
+    margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    position: relative; overflow: hidden;
+  }
+  .step-card::before {
+    content: ''; position: absolute; top: 0; left: 0;
+    width: 4px; height: 100%; background: #25d366;
+  }
+  .step-header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+  .step-number {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: #075e54; color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 16px; flex-shrink: 0;
+  }
+  .step-title { font-size: 18px; font-weight: 600; color: #075e54; }
+  .step-subtitle { font-size: 13px; color: #888; margin-top: 2px; }
+
+  .step-body { color: #444; line-height: 1.7; font-size: 15px; }
+  .step-body p { margin-bottom: 10px; }
+
+  ol.styled { padding-left: 20px; margin: 12px 0; }
+  ol.styled li { margin-bottom: 8px; color: #333; }
+  ol.styled li strong { color: #075e54; }
+
+  .tip-box {
+    background: #e8f5e9; border-radius: 8px; padding: 14px 16px;
+    margin: 14px 0; border: 1px solid #c8e6c9; font-size: 14px; color: #1b5e20;
+  }
+  .tip-box strong { display: block; margin-bottom: 4px; }
+
+  .warning-box {
+    background: #fff8e1; border-radius: 8px; padding: 14px 16px;
+    margin: 14px 0; border: 1px solid #ffe082; font-size: 14px; color: #6d4c00;
+  }
+  .warning-box strong { display: block; margin-bottom: 4px; }
+
+  .info-box {
+    background: #e3f2fd; border-radius: 8px; padding: 14px 16px;
+    margin: 14px 0; border: 1px solid #90caf9; font-size: 14px; color: #0d47a1;
+  }
+
+  .link-btn {
+    display: inline-block; background: #075e54; color: white;
+    padding: 10px 20px; border-radius: 8px; text-decoration: none;
+    font-size: 14px; font-weight: 600; margin: 8px 0;
+  }
+
+  .cost-table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  .cost-table th {
+    background: #075e54; color: white; padding: 12px 16px;
+    text-align: left; font-size: 14px;
+  }
+  .cost-table td { padding: 10px 16px; border-bottom: 1px solid #eee; font-size: 14px; }
+  .cost-table tr:nth-child(even) td { background: #f9f9f9; }
+
+  .timeline {
+    display: flex; gap: 0; margin: 20px 0; flex-wrap: wrap;
+  }
+  .timeline-item {
+    flex: 1; min-width: 140px; text-align: center; padding: 16px 8px;
+    position: relative;
+  }
+  .timeline-item:not(:last-child)::after {
+    content: '→'; position: absolute; right: -8px; top: 50%;
+    transform: translateY(-50%); font-size: 20px; color: #25d366;
+  }
+  .timeline-item .t-icon { font-size: 28px; margin-bottom: 8px; }
+  .timeline-item .t-label { font-size: 12px; font-weight: 600; color: #075e54; }
+  .timeline-item .t-time { font-size: 11px; color: #888; margin-top: 4px; }
+
+  .checklist { list-style: none; padding: 0; margin: 12px 0; }
+  .checklist li {
+    padding: 8px 12px 8px 36px; position: relative;
+    border-bottom: 1px solid #f0f0f0; font-size: 14px; color: #333;
+  }
+  .checklist li::before {
+    content: '☐'; position: absolute; left: 10px;
+    color: #25d366; font-size: 16px;
+  }
+
+  .footer {
+    text-align: center; padding: 32px; color: #888; font-size: 13px;
+    border-top: 1px solid #eee; margin-top: 40px;
+  }
+
+  @media print {
+    body { background: white; }
+    .cover { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .step-card, .benefit-card { box-shadow: none; border: 1px solid #ddd; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="logo">📱</div>
+  <h1>Número WhatsApp Business Próprio</h1>
+  <p>Guia completo para aprovação do número oficial via Twilio + Meta — com logo da clínica, nome verificado e muito mais.</p>
+  <div class="badge">✦ Clinix — Sistema de Agendamento ✦</div>
+</div>
+
+<div class="container">
+
+  <div class="intro-box">
+    <h2>Por que ter um número próprio?</h2>
+    <p>O Sandbox do Twilio é ótimo para testes, mas usa o número compartilhado <strong>+1 415 523 8886</strong> com a foto do Twilio. Para vender o Clinix para as clínicas, cada cliente precisa de um número com a identidade visual da própria clínica — nome, foto, descrição e o selo verificado da Meta.</p>
+  </div>
+
+  <div class="benefits">
+    <div class="benefit-card">
+      <div class="icon">🖼️</div>
+      <h3>Logo da clínica no WhatsApp</h3>
+    </div>
+    <div class="benefit-card">
+      <div class="icon">✅</div>
+      <h3>Selo verificado da Meta</h3>
+    </div>
+    <div class="benefit-card">
+      <div class="icon">📞</div>
+      <h3>Número real da clínica</h3>
+    </div>
+    <div class="benefit-card">
+      <div class="icon">📊</div>
+      <h3>Analytics e relatórios</h3>
+    </div>
+    <div class="benefit-card">
+      <div class="icon">🔒</div>
+      <h3>Sem limite de contatos</h3>
+    </div>
+  </div>
+
+  <!-- TIMELINE -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-number">⏱</div>
+      <div>
+        <div class="step-title">Visão Geral do Processo</div>
+        <div class="step-subtitle">Tempo total estimado: 3 a 7 dias úteis</div>
+      </div>
+    </div>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="t-icon">💳</div>
+        <div class="t-label">Twilio Pago</div>
+        <div class="t-time">Imediato</div>
+      </div>
+      <div class="timeline-item">
+        <div class="t-icon">🏢</div>
+        <div class="t-label">Meta Business</div>
+        <div class="t-time">1–2 dias</div>
+      </div>
+      <div class="timeline-item">
+        <div class="t-icon">📱</div>
+        <div class="t-label">Número WA</div>
+        <div class="t-time">1 dia</div>
+      </div>
+      <div class="timeline-item">
+        <div class="t-icon">🔗</div>
+        <div class="t-label">Conectar Twilio</div>
+        <div class="t-time">1–2 dias</div>
+      </div>
+      <div class="timeline-item">
+        <div class="t-icon">🚀</div>
+        <div class="t-label">Ao Vivo!</div>
+        <div class="t-time">Pronto</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PASSO 1 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-number">1</div>
+      <div>
+        <div class="step-title">Fazer Upgrade da Conta Twilio</div>
+        <div class="step-subtitle">Sair do plano trial gratuito</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <p>A conta trial tem limitações (só pode enviar para números verificados). Para usar com clientes reais, precisa adicionar crédito.</p>
+      <ol class="styled">
+        <li>Acesse <strong>console.twilio.com</strong></li>
+        <li>Clique em <strong>"Upgrade"</strong> no topo da página (aparece em laranja)</li>
+        <li>Adicione um cartão de crédito e deposite o mínimo de <strong>US$ 20</strong></li>
+        <li>Pronto — a conta estará ativa sem restrições de trial</li>
+      </ol>
+
+      <table class="cost-table">
+        <tr>
+          <th>Item</th>
+          <th>Custo estimado</th>
+        </tr>
+        <tr>
+          <td>Número de telefone mensal</td>
+          <td>~US$ 1/mês</td>
+        </tr>
+        <tr>
+          <td>Mensagem WhatsApp enviada</td>
+          <td>~US$ 0,005 por mensagem</td>
+        </tr>
+        <tr>
+          <td>Mensagem WhatsApp recebida</td>
+          <td>Grátis (template approval)</td>
+        </tr>
+      </table>
+
+      <div class="tip-box">
+        <strong>💡 Dica:</strong> Para uma clínica com ~200 agendamentos/mês e lembretes, o custo médio é de US$ 3–8/mês em mensagens.
+      </div>
+    </div>
+  </div>
+
+  <!-- PASSO 2 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-number">2</div>
+      <div>
+        <div class="step-title">Criar Conta no Meta Business Manager</div>
+        <div class="step-subtitle">Necessário para aprovar o WhatsApp Business</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <ol class="styled">
+        <li>Acesse <strong>business.facebook.com</strong></li>
+        <li>Clique em <strong>"Criar Conta"</strong></li>
+        <li>Preencha: nome da empresa (ex: AL Aguiar Marques), e-mail comercial e telefone</li>
+        <li>Verifique o e-mail recebido da Meta</li>
+        <li>Em <strong>Configurações do Negócio → Informações da Empresa</strong>, adicione:
+          <ul style="margin: 8px 0 0 20px; color: #555;">
+            <li>CNPJ da clínica</li>
+            <li>Endereço completo</li>
+            <li>Website (se tiver)</li>
+          </ul>
+        </li>
+      </ol>
+
+      <div class="warning-box">
+        <strong>⚠️ Atenção:</strong> Use o e-mail e dados reais da clínica. A Meta pode pedir documentação para verificar o negócio (CNPJ, contrato social ou cartão CNPJ).
+      </div>
+    </div>
+  </div>
+
+  <!-- PASSO 3 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-number">3</div>
+      <div>
+        <div class="step-title">Adicionar Número WhatsApp Business no Twilio</div>
+        <div class="step-subtitle">Conectar o número da clínica à API oficial</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <ol class="styled">
+        <li>No Twilio Console, vá em <strong>Messaging → Senders → WhatsApp Senders</strong></li>
+        <li>Clique em <strong>"Add New Sender"</strong></li>
+        <li>Escolha <strong>"Connect your own number"</strong></li>
+        <li>Faça login com o Facebook da conta Meta Business</li>
+        <li>Siga o processo de aprovação da Meta:
+          <ul style="margin: 8px 0 0 20px; color: #555;">
+            <li>Confirme o número de telefone da clínica (via SMS ou ligação)</li>
+            <li>Configure o perfil: nome, categoria, descrição, foto/logo</li>
+            <li>Aceite os termos de uso do WhatsApp Business</li>
+          </ul>
+        </li>
+      </ol>
+
+      <div class="info-box">
+        📌 <strong>Sobre o número:</strong> Pode ser qualquer número (fixo ou celular) que a clínica possua e que não esteja sendo usado como WhatsApp pessoal. Se já tiver um número com histórico de conversas, pode migrar.
+      </div>
+
+      <div class="tip-box">
+        <strong>💡 Dica:</strong> Número fixo (DDG 0800 ou número fixo local) funciona muito bem para clínicas e passa mais credibilidade.
+      </div>
+    </div>
+  </div>
+
+  <!-- PASSO 4 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-number">4</div>
+      <div>
+        <div class="step-title">Configurar o Perfil do WhatsApp</div>
+        <div class="step-subtitle">Logo, nome e descrição da clínica</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <p>Após a aprovação, configure o perfil público que os pacientes verão:</p>
+      <ol class="styled">
+        <li>No Twilio Console → <strong>WhatsApp Senders → [seu número]</strong></li>
+        <li>Ou direto no <strong>Meta WhatsApp Manager</strong> (business.facebook.com → Contas do WhatsApp)</li>
+        <li>Adicione:
+          <ul style="margin: 8px 0 0 20px; color: #555;">
+            <li><strong>Foto de perfil:</strong> logo da clínica (PNG, mínimo 640x640px)</li>
+            <li><strong>Nome:</strong> AL Aguiar Marques</li>
+            <li><strong>Categoria:</strong> Saúde e Medicina</li>
+            <li><strong>Descrição:</strong> "Clínica de Dermatologia — Agende sua consulta via WhatsApp"</li>
+            <li><strong>Endereço, e-mail e horário de funcionamento</strong></li>
+          </ul>
+        </li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- PASSO 5 -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-number">5</div>
+      <div>
+        <div class="step-title">Atualizar o Clinix com o Novo Número</div>
+        <div class="step-subtitle">Trocar o Sandbox pelo número real</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <p>Após a aprovação, atualize 3 coisas no sistema:</p>
+
+      <p><strong>1. Arquivo .env:</strong></p>
+      <div style="background:#1e1e2e; color:#a6e3a1; padding:16px; border-radius:8px; font-family:monospace; font-size:13px; margin:12px 0;">
+        TWILIO_FROM_NUMBER=whatsapp:+55219XXXXXXXX<br>
+        TWILIO_WEBHOOK_URL=https://SEU-SERVIDOR.com/webhooks/twilio
+      </div>
+
+      <p><strong>2. Banco de dados (whatsappNumber da clínica):</strong></p>
+      <div style="background:#1e1e2e; color:#a6e3a1; padding:16px; border-radius:8px; font-family:monospace; font-size:13px; margin:12px 0;">
+        UPDATE "Clinic" SET "whatsappNumber" = '+55219XXXXXXXX'<br>WHERE slug = 'dermato-demo';
+      </div>
+
+      <p><strong>3. Webhook no Twilio Console:</strong><br>
+      Messaging → WhatsApp Senders → [seu número] → Configurar URL do webhook com o endereço do servidor em produção.</p>
+
+      <div class="tip-box">
+        <strong>💡 Para produção:</strong> Em vez do ngrok/cloudflare (que são temporários), hospede o Clinix em Railway, Render ou Fly.io para ter uma URL fixa permanente.
+      </div>
+    </div>
+  </div>
+
+  <!-- CHECKLIST -->
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-number">✓</div>
+      <div>
+        <div class="step-title">Checklist Completo</div>
+        <div class="step-subtitle">Marque cada item conforme concluir</div>
+      </div>
+    </div>
+    <div class="step-body">
+      <ul class="checklist">
+        <li>Conta Twilio com upgrade feito (cartão adicionado, saldo ativo)</li>
+        <li>Conta Meta Business Manager criada com dados da clínica</li>
+        <li>CNPJ e dados da empresa verificados na Meta</li>
+        <li>Número de telefone da clínica definido e disponível</li>
+        <li>WhatsApp Sender adicionado e aprovado no Twilio</li>
+        <li>Perfil configurado: foto, nome, categoria, descrição</li>
+        <li>.env atualizado com o novo número</li>
+        <li>Banco de dados atualizado com whatsappNumber real</li>
+        <li>Servidor hospedado em produção (URL permanente)</li>
+        <li>Webhook configurado no Twilio com URL de produção</li>
+        <li>Teste de ponta a ponta realizado com número real</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SUPORTE -->
+  <div class="intro-box" style="border-left-color: #075e54;">
+    <h2>🆘 Precisa de Ajuda?</h2>
+    <p>Se tiver dúvidas durante o processo de aprovação, a Twilio tem suporte em português disponível em <strong>help.twilio.com</strong>. O processo de verificação pela Meta pode levar de 1 a 3 dias úteis — é normal aguardar este prazo.</p>
+  </div>
+
+</div>
+
+<div class="footer">
+  Clinix — Sistema de Agendamento para Clínicas &nbsp;|&nbsp; Gerado em abril de 2026
+</div>
+
+</body>
+</html>

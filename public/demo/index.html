@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ClinicBot Pro — Demo WhatsApp</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0a1120;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 20px 16px;
+    padding-bottom: 40px;
+  }
+
+  /* ─── Header da página ──────────────────────────────────── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 24px;
+    max-width: 400px;
+    width: 100%;
+  }
+  .page-logo {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: linear-gradient(135deg, #4f46e5, #06b6d4);
+    border-radius: 16px; padding: 10px 18px;
+    margin-bottom: 14px;
+  }
+  .page-logo span:first-child { font-size: 24px; }
+  .page-logo span:last-child { font-size: 15px; font-weight: 700; color: #fff; }
+  .page-title { font-size: 20px; font-weight: 800; color: #f1f5f9; margin-bottom: 6px; }
+  .page-sub { font-size: 13px; color: #64748b; line-height: 1.5; }
+
+  /* ─── Phone frame ──────────────────────────────────────── */
+  .phone-outer {
+    width: 100%;
+    max-width: 390px;
+    background: #1a1a2e;
+    border-radius: 44px;
+    padding: 14px;
+    box-shadow: 0 30px 80px rgba(0,0,0,.7), 0 0 0 1px rgba(255,255,255,.08);
+    position: relative;
+  }
+  .phone-notch {
+    width: 120px; height: 28px;
+    background: #0d0d1a;
+    border-radius: 0 0 20px 20px;
+    margin: 0 auto 10px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px;
+  }
+  .notch-cam { width: 10px; height: 10px; background: #1e1e3a; border-radius: 50%; border: 2px solid #333; }
+  .notch-spk { width: 36px; height: 4px; background: #1e1e3a; border-radius: 2px; }
+
+  .phone-screen {
+    background: #e5ddd5;
+    border-radius: 30px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 600px;
+    max-height: 80vh;
+    position: relative;
+  }
+
+  /* ─── WhatsApp Header ──────────────────────────────────── */
+  .wa-header {
+    background: #075e54;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-top: env(safe-area-inset-top, 10px);
+  }
+  .wa-back { font-size: 20px; color: rgba(255,255,255,.9); cursor: pointer; }
+  .wa-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, #25d366, #128c7e);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .wa-info { flex: 1; }
+  .wa-name { font-size: 14px; font-weight: 700; color: #fff; }
+  .wa-status { font-size: 11px; color: rgba(255,255,255,.75); display: flex; align-items: center; gap: 4px; }
+  .wa-status::before { content:''; width:6px; height:6px; border-radius:50%; background:#25d366; display:inline-block; animation: blink 1.5s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+  .wa-actions { display: flex; gap: 12px; color: rgba(255,255,255,.85); font-size: 18px; }
+
+  /* ─── Chat body ──────────────────────────────────────────── */
+  .wa-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23b2b2b2' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  .wa-body::-webkit-scrollbar { width: 3px; }
+  .wa-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,.2); border-radius: 3px; }
+
+  /* Date separator */
+  .date-sep {
+    text-align: center;
+    font-size: 11px;
+    color: #667781;
+    background: rgba(255,255,255,.7);
+    display: inline-block;
+    align-self: center;
+    padding: 4px 10px;
+    border-radius: 8px;
+    margin: 8px 0;
+    box-shadow: 0 1px 2px rgba(0,0,0,.1);
+  }
+
+  /* ─── Mensagens ──────────────────────────────────────────── */
+  .msg-row { display: flex; align-items: flex-end; gap: 4px; margin-bottom: 2px; }
+  .msg-row.out { flex-direction: row-reverse; }
+  .msg-row.in { flex-direction: row; }
+
+  .bubble {
+    max-width: 82%;
+    padding: 7px 10px 5px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    line-height: 1.45;
+    position: relative;
+    word-break: break-word;
+    box-shadow: 0 1px 2px rgba(0,0,0,.15);
+  }
+  .bubble.in {
+    background: #fff;
+    color: #111;
+    border-radius: 0px 8px 8px 8px;
+  }
+  .bubble.out {
+    background: #d9fdd3;
+    color: #111;
+    border-radius: 8px 8px 0px 8px;
+  }
+  .bubble .tick {
+    display: inline-block;
+    float: right;
+    margin-left: 6px;
+    margin-top: 2px;
+    font-size: 12px;
+    color: #53bdeb;
+  }
+  .bubble .msg-time {
+    display: block;
+    font-size: 10.5px;
+    color: #8696a0;
+    text-align: right;
+    margin-top: 3px;
+    line-height: 1;
+  }
+  .bubble.typing {
+    background: #fff;
+    color: #8696a0;
+    font-style: italic;
+    font-size: 13px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .typing-dots { display: flex; gap: 4px; }
+  .typing-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #8696a0;
+    animation: typingAnim 1.2s infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: .2s; }
+  .typing-dot:nth-child(3) { animation-delay: .4s; }
+  @keyframes typingAnim { 0%,80%,100%{transform:scale(1);opacity:.5} 40%{transform:scale(1.3);opacity:1} }
+
+  /* ─── Input ──────────────────────────────────────────────── */
+  .wa-input-row {
+    background: #f0f2f5;
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: env(safe-area-inset-bottom, 8px);
+  }
+  .wa-input-wrap {
+    flex: 1;
+    background: #fff;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    padding: 8px 14px;
+    gap: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.1);
+  }
+  .wa-emoji-btn { font-size: 20px; cursor: pointer; opacity: .6; }
+  .wa-input {
+    flex: 1; border: none; outline: none;
+    font-size: 14px; color: #111; background: none;
+    font-family: inherit;
+    min-width: 0;
+  }
+  .wa-input::placeholder { color: #8696a0; }
+  .wa-send-btn {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: #25d366; border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 18px;
+    transition: background .2s; flex-shrink: 0;
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(37,211,102,.4);
+  }
+  .wa-send-btn:hover { background: #128c7e; }
+  .wa-send-btn:active { transform: scale(.92); }
+
+  /* ─── Quick replies ──────────────────────────────────────── */
+  .quick-replies {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    padding: 6px 10px 4px;
+    background: #e5ddd5;
+  }
+  .qr-btn {
+    background: #fff;
+    border: 1.5px solid #25d366;
+    color: #075e54;
+    border-radius: 16px;
+    padding: 5px 13px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+  }
+  .qr-btn:hover { background: #25d366; color: #fff; }
+  .qr-btn:active { transform: scale(.94); }
+
+  /* ─── Demo info ──────────────────────────────────────────── */
+  .demo-info {
+    max-width: 390px;
+    width: 100%;
+    margin-top: 18px;
+    background: rgba(99,102,241,.08);
+    border: 1px solid rgba(99,102,241,.2);
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+  .demo-info-title { font-size: 12px; font-weight: 700; color: #6366f1; margin-bottom: 6px; }
+  .demo-info-text { font-size: 12px; color: #64748b; line-height: 1.5; }
+  .reset-btn {
+    width: 100%; margin-top: 12px;
+    background: rgba(99,102,241,.15);
+    border: 1px solid rgba(99,102,241,.3);
+    color: #818cf8;
+    border-radius: 10px; padding: 9px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all .2s;
+  }
+  .reset-btn:hover { background: rgba(99,102,241,.25); }
+
+  .admin-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 12px;
+    font-size: 12px; color: #4f46e5; text-decoration: none;
+    background: rgba(79,70,229,.1); border: 1px solid rgba(79,70,229,.2);
+    border-radius: 8px; padding: 7px 14px;
+    transition: background .2s;
+  }
+  .admin-link:hover { background: rgba(79,70,229,.2); }
+
+  @media (max-width: 440px) {
+    body { padding: 12px 0; background: #e5ddd5; }
+    .page-header { display: none; }
+    .phone-outer { border-radius: 0; padding: 0; box-shadow: none; max-width: 100%; }
+    .phone-notch { display: none; }
+    .phone-screen { border-radius: 0; max-height: 100vh; min-height: 100vh; }
+    .demo-info { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="page-logo">
+    <span>🏥</span>
+    <span>ClinicBot Pro</span>
+  </div>
+  <div class="page-title">Demo — Chatbot WhatsApp</div>
+  <div class="page-sub">Simule uma conversa real com o assistente da clínica. Experimente o fluxo de agendamento!</div>
+</div>
+
+<div class="phone-outer">
+  <div class="phone-notch">
+    <div class="notch-spk"></div>
+    <div class="notch-cam"></div>
+  </div>
+
+  <div class="phone-screen">
+    <!-- Header WhatsApp -->
+    <div class="wa-header">
+      <div class="wa-back">‹</div>
+      <div class="wa-avatar">🤖</div>
+      <div class="wa-info">
+        <div class="wa-name">Clara — Clínica Dermato</div>
+        <div class="wa-status">Online agora</div>
+      </div>
+      <div class="wa-actions">
+        <span>📞</span>
+        <span>⋮</span>
+      </div>
+    </div>
+
+    <!-- Mensagens -->
+    <div class="wa-body" id="chat-body">
+      <div class="date-sep">Hoje</div>
+    </div>
+
+    <!-- Quick replies -->
+    <div class="quick-replies" id="quick-replies"></div>
+
+    <!-- Input -->
+    <div class="wa-input-row">
+      <div class="wa-input-wrap">
+        <div class="wa-emoji-btn">😊</div>
+        <input class="wa-input" type="text" placeholder="Digite uma mensagem..." id="user-input" onkeypress="handleKey(event)" autocomplete="off">
+        <div class="wa-emoji-btn" style="font-size:16px">📎</div>
+      </div>
+      <button class="wa-send-btn" onclick="sendUser()">➤</button>
+    </div>
+  </div>
+</div>
+
+<div class="demo-info">
+  <div class="demo-info-title">💡 Sobre esta demo</div>
+  <div class="demo-info-text">
+    Esta é uma simulação do fluxo real que seus pacientes viverão no WhatsApp.<br>
+    A integração real usa <strong>Twilio WhatsApp Business API</strong>.<br>
+    Configure o webhook em <code style="background:rgba(255,255,255,.1);padding:1px 5px;border-radius:4px">POST /webhooks/twilio</code>.
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+    <button class="reset-btn" onclick="resetChat()" style="margin-top:0;flex:1">↺ Reiniciar conversa</button>
+    <a class="admin-link" href="/admin">📊 Painel Admin</a>
+  </div>
+</div>
+
+<script>
+// ─── Fluxo de conversa ────────────────────────────────────────
+const CLINIC = {
+  name: 'Clínica Dermato Demo',
+  assistant: 'Clara',
+  services: ['Consulta Dermatológica', 'Mapeamento de Pintas', 'Procedimento Estético'],
+  professionals: ['Dra. Ana Silva', 'Dr. Bruno Costa', 'Qualquer disponível'],
+  slots: {
+    'Segunda, 28/04': ['09:00', '10:30', '14:00'],
+    'Terça, 29/04':   ['11:00', '15:30'],
+    'Quarta, 30/04':  ['08:30', '13:00', '16:00'],
+  },
+};
+
+let state = 'IDLE';
+let ctx = {};
+
+// ─── State machine ────────────────────────────────────────────
+function processInput(text) {
+  const t = text.trim();
+  const lower = t.toLowerCase();
+
+  switch (state) {
+    case 'IDLE':
+      if (['oi','olá','ola','oioi','boa tarde','bom dia','boa noite','menu'].some(w => lower.includes(w)) || t) {
+        showMenu();
+      }
+      break;
+
+    case 'MENU':
+      if (t === '1') { askService(); }
+      else if (t === '2') { showMyAppts(); }
+      else if (t === '3') { showCancel(); }
+      else if (t === '4') { showReception(); }
+      else { botSay('Por favor, responda com o número:\n1 – Agendar\n2 – Meus agendamentos\n3 – Cancelar\n4 – Recepção', ['1','2','3','4']); }
+      break;
+
+    case 'CHOOSING_SERVICE':
+      { const idx = parseInt(t) - 1;
+        if (idx >= 0 && idx < CLINIC.services.length) { ctx.service = CLINIC.services[idx]; askProfessional(); }
+        else { botSay('Opção inválida. Escolha:\n1. Consulta Dermatológica\n2. Mapeamento de Pintas\n3. Procedimento Estético', ['1','2','3']); }
+      } break;
+
+    case 'CHOOSING_PROFESSIONAL':
+      { const idx = parseInt(t) - 1;
+        if (idx >= 0 && idx < CLINIC.professionals.length) { ctx.professional = CLINIC.professionals[idx]; askDate(); }
+        else { botSay('Opção inválida. Escolha:\n1. Dra. Ana Silva\n2. Dr. Bruno Costa\n3. Qualquer disponível', ['1','2','3']); }
+      } break;
+
+    case 'CHOOSING_DATE':
+      { const dates = Object.keys(CLINIC.slots);
+        const idx = parseInt(t) - 1;
+        if (lower === 'mais') { botSay('Para ver mais datas, entre em contato com a recepção.'); }
+        else if (idx >= 0 && idx < dates.length) { ctx.date = dates[idx]; askTime(); }
+        else { botSay('Opção inválida. Digite o número da data ou *mais*.', dates.map((_,i)=>String(i+1)).concat(['mais'])); }
+      } break;
+
+    case 'CHOOSING_TIME':
+      { const times = CLINIC.slots[ctx.date] || [];
+        if (times.includes(t)) { ctx.time = t; askInfo(); }
+        else { botSay(`Horário inválido. Escolha: ${times.join(' / ')}`, times); }
+      } break;
+
+    case 'COLLECTING_INFO':
+      { const parts = t.split(/\s+/);
+        const cpf = parts[parts.length-1].replace(/\D/g,'');
+        const name = parts.slice(0,-1).join(' ');
+        if (name.length >= 3 && cpf.length >= 11) {
+          ctx.name = name; ctx.cpf = cpf; askConfirm();
+        } else {
+          botSay('Por favor, informe *nome completo* e *CPF*:\n_Exemplo: Maria Silva 12345678900_');
+        }
+      } break;
+
+    case 'CONFIRMING':
+      if (lower === 'sim' || lower === 's') { confirmBooking(); }
+      else if (lower === 'não' || lower === 'nao' || lower === 'n') {
+        botSay('Ok! Cancelado. Digite *menu* para recomeçar.', ['menu']);
+        state = 'IDLE';
+      } else { botSay('Responda *SIM* para confirmar ou *NÃO* para cancelar.', ['SIM','NÃO']); }
+      break;
+
+    case 'DONE':
+      if (lower === 'menu' || t) { showMenu(); }
+      break;
+
+    default:
+      showMenu();
+  }
+}
+
+// ─── Mensagens do bot ─────────────────────────────────────────
+let typingTimeout = null;
+
+function botSay(text, quickReplies = [], delay = 900) {
+  showTyping();
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    hideTyping();
+    addBubble('in', text);
+    showQuickReplies(quickReplies);
+  }, delay);
+}
+
+let typingEl = null;
+function showTyping() {
+  hideTyping();
+  typingEl = document.createElement('div');
+  typingEl.className = 'msg-row in';
+  typingEl.innerHTML = `<div class="bubble typing"><div class="typing-dots"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+  document.getElementById('chat-body').appendChild(typingEl);
+  scrollBottom();
+}
+function hideTyping() {
+  if (typingEl) { typingEl.remove(); typingEl = null; }
+}
+
+function addBubble(dir, text, quick = false) {
+  const body = document.getElementById('chat-body');
+  const row = document.createElement('div');
+  row.className = `msg-row ${dir}`;
+
+  const now = new Date();
+  const time = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+  const tick = dir === 'out' ? '<span class="tick">✓✓</span>' : '';
+  const html = text
+    .replace(/\*(.*?)\*/g, '<strong>$1</strong>')
+    .replace(/_(.*?)_/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>');
+
+  row.innerHTML = `<div class="bubble ${dir}">${html}${tick}<span class="msg-time">${time}</span></div>`;
+  body.appendChild(row);
+  scrollBottom();
+}
+
+function showQuickReplies(options) {
+  const el = document.getElementById('quick-replies');
+  el.innerHTML = options.map(o => `<button class="qr-btn" onclick="tapQuick('${o}')">${o}</button>`).join('');
+}
+
+function tapQuick(val) {
+  addBubble('out', val);
+  showQuickReplies([]);
+  processInput(val);
+}
+
+function scrollBottom() {
+  const body = document.getElementById('chat-body');
+  setTimeout(() => body.scrollTop = body.scrollHeight, 50);
+}
+
+// ─── Fluxo ────────────────────────────────────────────────────
+function showMenu() {
+  state = 'MENU';
+  botSay(`Olá! 👋 Sou *${CLINIC.assistant}*, assistente da *${CLINIC.name}*.\n\nComo posso te ajudar?\n1. Agendar consulta\n2. Meus agendamentos\n3. Cancelar consulta\n4. Falar com a recepção`,
+    ['1','2','3','4'], 600);
+}
+
+function askService() {
+  state = 'CHOOSING_SERVICE';
+  botSay(`Qual serviço você procura?\n\n1. Consulta Dermatológica\n2. Mapeamento de Pintas\n3. Procedimento Estético`,
+    ['1','2','3']);
+}
+
+function askProfessional() {
+  state = 'CHOOSING_PROFESSIONAL';
+  botSay(`Com qual profissional?\n\n1. Dra. Ana Luiza Aguiar\n2. Dr. Bruno Costa\n3. Qualquer disponível`,
+    ['1','2','3']);
+}
+
+function askDate() {
+  state = 'CHOOSING_DATE';
+  botSay('🔍 Buscando horários...', [], 400);
+  setTimeout(() => {
+    const dates = Object.keys(CLINIC.slots);
+    const list = dates.map((d, i) => {
+      const times = CLINIC.slots[d].join(' / ');
+      return `${i + 1}. *${d}*\n   ${times}`;
+    }).join('\n\n');
+    botSay(`Próximas datas disponíveis:\n\n${list}\n\nDigite o número da data ou *mais* para ver mais opções.`,
+      dates.map((_,i) => String(i+1)).concat(['mais']), 1200);
+  }, 500);
+}
+
+function askTime() {
+  state = 'CHOOSING_TIME';
+  const times = CLINIC.slots[ctx.date];
+  botSay(`Você escolheu *${ctx.date}*.\n\nQual horário?\n${times.join(' / ')}`, times);
+}
+
+function askInfo() {
+  state = 'COLLECTING_INFO';
+  botSay(`Para finalizar, me diga seu *nome completo* e *CPF* (só números):\n_Exemplo: Maria Silva 12345678900_`);
+}
+
+function askConfirm() {
+  state = 'CONFIRMING';
+  const prof = ctx.professional === 'Qualquer disponível' ? 'Profissional disponível' : ctx.professional;
+  botSay(`✅ Confirmar agendamento?\n\n📋 *${ctx.service}*\n👩‍⚕️ ${prof}\n📅 ${ctx.date} às ${ctx.time}\n👤 ${ctx.name}\n\nResponda *SIM* para confirmar ou *NÃO* para cancelar.`,
+    ['SIM','NÃO']);
+}
+
+function confirmBooking() {
+  state = 'DONE';
+  const prof = ctx.professional === 'Qualquer disponível' ? 'Dra. Ana Silva' : ctx.professional;
+  botSay(`✅ *Agendamento confirmado!*\n\n📋 ${ctx.service}\n👩‍⚕️ ${prof}\n📅 ${ctx.date} às ${ctx.time}\n📍 Av. Paulista, 1000 — São Paulo/SP\n\nVocê receberá um lembrete na véspera da consulta. Qualquer dúvida é só chamar! 😊`,
+    ['menu'], 800);
+}
+
+function showMyAppts() {
+  state = 'DONE';
+  botSay(`Você não tem consultas agendadas no momento.\n\nDigite *menu* para agendar. 😊`, ['menu']);
+}
+
+function showCancel() {
+  state = 'DONE';
+  botSay(`Você não tem consultas para cancelar.\n\nDigite *menu* para voltar. 😊`, ['menu']);
+}
+
+function showReception() {
+  state = 'DONE';
+  botSay(`Para falar com a recepção:\n📞 (11) 3000-0000\n🕐 Seg–Sex: 8h–18h\n\nDigite *menu* para voltar.`, ['menu']);
+}
+
+// ─── Input do usuário ─────────────────────────────────────────
+function sendUser() {
+  const inp = document.getElementById('user-input');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+  showQuickReplies([]);
+  addBubble('out', text);
+  processInput(text);
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter') sendUser();
+}
+
+// ─── Reset ────────────────────────────────────────────────────
+function resetChat() {
+  state = 'IDLE';
+  ctx = {};
+  document.getElementById('chat-body').innerHTML = '<div class="date-sep">Hoje</div>';
+  showQuickReplies([]);
+  startChat();
+}
+
+function startChat() {
+  setTimeout(() => {
+    addBubble('in', 'Oi! 😊');
+    processInput('oi');
+  }, 600);
+}
+
+// ─── Init ─────────────────────────────────────────────────────
+startChat();
+</script>
+</body>
+</html>
