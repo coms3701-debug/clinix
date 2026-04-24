@@ -47,7 +47,7 @@ export async function adminRoutes(app: FastifyInstance) {
           ...(serviceIds?.length
             ? { services: { create: serviceIds.map((sid) => ({ serviceId: sid })) } }
             : {}),
-        },
+        } as any,
       });
       return reply.status(201).send(prof);
     },
@@ -68,7 +68,7 @@ export async function adminRoutes(app: FastifyInstance) {
       if (!parsed.success) return reply.status(400).send(parsed.error);
 
       const service = await prisma.service.create({
-        data: { ...parsed.data, clinicId: req.params.id },
+        data: { ...parsed.data, clinicId: req.params.id } as any,
       });
       return reply.status(201).send(service);
     },
@@ -154,7 +154,7 @@ export async function adminRoutes(app: FastifyInstance) {
         noShow: totalNoShow,
         cancelados: totalCancelled,
         noShowRate: `${noShowRate}%`,
-        totalPacientes,
+        totalPacientes: totalPatients,
         proximosAgendamentos: upcomingAppointments,
       },
       hoje: todayAppointments,
@@ -264,7 +264,7 @@ export async function adminRoutes(app: FastifyInstance) {
           startsAt: startsAtDate,
           endsAt,
           status: 'CONFIRMED',
-          notes: notes ?? null,
+          triageNotes: notes ?? null,
         },
         include: {
           patient: { select: { id: true, fullName: true, whatsappNumber: true } },
@@ -291,7 +291,7 @@ export async function adminRoutes(app: FastifyInstance) {
       if (!parsed.success) return reply.status(400).send(parsed.error);
 
       const schedule = await prisma.workSchedule.create({
-        data: { ...parsed.data, professionalId: req.params.id },
+        data: { ...parsed.data, professionalId: req.params.id } as any,
       });
       return reply.status(201).send(schedule);
     },

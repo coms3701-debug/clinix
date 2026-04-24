@@ -1,5 +1,4 @@
-import IORedis from 'ioredis';
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+import { Redis as IORedis } from 'ioredis';
 import { config } from './config.js';
 
 export const redis = new IORedis(config.redis.url, {
