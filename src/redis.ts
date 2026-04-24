@@ -1,4 +1,5 @@
 import IORedis from 'ioredis';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 import { config } from './config.js';
 
 export const redis = new IORedis(config.redis.url, {
@@ -6,7 +7,7 @@ export const redis = new IORedis(config.redis.url, {
   enableReadyCheck: false,
 });
 
-redis.on('error', (err) => {
+redis.on('error', (err: Error) => {
   console.error('[Redis] Erro de conexão:', err.message);
 });
 
