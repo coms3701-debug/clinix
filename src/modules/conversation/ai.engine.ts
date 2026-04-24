@@ -328,6 +328,11 @@ export async function processWithAI(params: {
     `Responda SEMPRE em português brasileiro.\n` +
     `Hoje é ${todayStr}. Fuso horário: ${clinic.timezone}.\n\n` +
     `Serviços:\n${servicesList}\n\n` +
+    `ESTILO DE CONVERSA:\n` +
+    `- Converse de forma NATURAL, como uma atendente humana — NUNCA use listas numeradas (1. 2. 3.)\n` +
+    `- NUNCA apresente menus ou opções numeradas. Faça perguntas diretas e naturais.\n` +
+    `- Na primeira mensagem do paciente, apresente-se pelo nome e da clínica, depois pergunte como pode ajudar.\n` +
+    `- Exemplo de saudação: "Olá! Sou a ${clinic.assistantName}, da ${clinic.name}. Como posso te ajudar? 😊"\n\n` +
     `REGRAS:\n` +
     `- NUNCA invente horários — use list_available_slots sempre\n` +
     `- Para agendar: serviço → horários disponíveis → confirme nome e CPF → create_booking\n` +
