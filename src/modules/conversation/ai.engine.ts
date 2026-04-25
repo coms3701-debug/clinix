@@ -149,7 +149,7 @@ interface ToolCtx {
     name: string;
     assistantName: string;
     timezone: string;
-    services: Array<{ id: string; name: string; durationMin: number; active: boolean }>;
+    services: Array<{ id: string; name: string; description: string | null; durationMin: number; active: boolean }>;
   };
   patient: { id: string; fullName?: string | null; cpf?: string | null };
 }
@@ -167,7 +167,12 @@ async function executeTool(
     case 'list_services': {
       return ctx.clinic.services
         .filter((s) => s.active)
-        .map((s) => ({ id: s.id, name: s.name, durationMin: s.durationMin }));
+        .map((s) => ({
+          id: s.id,
+          name: s.name,
+          durationMin: s.durationMin,
+          ...(s.description ? { keywords: s.description } : {}),
+        }));
     }
 
     case 'list_professionals': {
