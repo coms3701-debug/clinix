@@ -10,6 +10,7 @@ import fastifyFormBody from '@fastify/formbody';
 import { config } from './config.js';
 import { twilioWebhookRoutes } from './modules/webhook/twilio.controller.js';
 import { adminRoutes } from './modules/admin/admin.routes.js';
+import { authRoutes, requireAuth } from './modules/auth/auth.routes.js';
 import { prisma } from './database.js';
 import { twilioAdapter } from './providers/twilio.adapter.js';
 import { addDays, startOfDay, endOfDay, format } from 'date-fns';
@@ -42,6 +43,10 @@ await app.register(fastifyStatic, {
   prefix: '/',
   decorateReply: false,
 });
+
+// ── Autenticação ───────────────────────────────────────────────
+await app.register(authRoutes);
+requireAuth(app);
 
 // ── Rotas ──────────────────────────────────────────────────────
 await app.register(twilioWebhookRoutes);

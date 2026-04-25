@@ -3,6 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<style>
+  #login-screen {
+    position: fixed; inset: 0; background: #0a1120;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999; flex-direction: column; gap: 24px;
+  }
+  #login-screen.hidden { display: none; }
+  .login-box {
+    background: #111d35; border: 1px solid #1e2d4a; border-radius: 16px;
+    padding: 40px; width: 100%; max-width: 380px; display: flex;
+    flex-direction: column; gap: 20px;
+  }
+  .login-box h2 { color: #f1f5f9; font-size: 1.4rem; text-align: center; }
+  .login-box p { color: #94a3b8; font-size: .9rem; text-align: center; margin-top: -12px; }
+  .login-box input {
+    width: 100%; padding: 12px 16px; border-radius: 8px;
+    border: 1px solid #1e2d4a; background: #0d1528; color: #f1f5f9;
+    font-size: 1rem; outline: none;
+  }
+  .login-box input:focus { border-color: #6366f1; }
+  .login-btn {
+    background: #6366f1; color: #fff; border: none; border-radius: 8px;
+    padding: 12px; font-size: 1rem; cursor: pointer; font-weight: 600;
+    transition: background .2s;
+  }
+  .login-btn:hover { background: #4f46e5; }
+  .login-error { color: #ef4444; font-size: .85rem; text-align: center; display: none; }
+  .login-logo { font-size: 3rem; text-align: center; }
+</style>
 <title>ClinicBot Pro — Painel Admin</title>
 <style>
   /* ─── Reset & Base ─────────────────────────────────────── */
@@ -547,6 +576,20 @@
 </head>
 <body>
 
+<!-- ── Tela de Login ─────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🏥</div>
+    <h2>ClinicBot Pro</h2>
+    <p>Painel Administrativo</p>
+    <input type="text" id="login-user" placeholder="Usuário" autocomplete="username" />
+    <input type="password" id="login-pass" placeholder="Senha" autocomplete="current-password"
+      onkeydown="if(event.key==='Enter') doLogin()" />
+    <button class="login-btn" onclick="doLogin()">Entrar</button>
+    <div class="login-error" id="login-error">Usuário ou senha incorretos</div>
+  </div>
+</div>
+
 <!-- Overlay mobile -->
 <div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
 
@@ -969,15 +1012,48 @@
 </nav>
 
 <script>
+// ─── Autenticação ────────────────────────────────────────────
+let AUTH_TOKEN = sessionStorage.getItem('clinix_token');
+
+async function doLogin() {
+  const username = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  try {
+    const res = await fetch('/v1/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    if (!res.ok) { errEl.style.display = 'block'; return; }
+    const data = await res.json();
+    AUTH_TOKEN = data.token;
+    sessionStorage.setItem('clinix_token', AUTH_TOKEN);
+    document.getElementById('login-screen').classList.add('hidden');
+    init();
+  } catch {
+    errEl.style.display = 'block';
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('clinix_token');
+  AUTH_TOKEN = null;
+  document.getElementById('login-screen').classList.remove('hidden');
+}
+
 // ─── Estado ─────────────────────────────────────────────────
 let currentSection = 'dashboard';
 let CLINIC_ID = null;
 let dashboardData = null;
 
 // ─── API ──────────────────────────────────────────────────────
-async function api(path) {
+async function api(path, options = {}) {
   try {
-    const r = await fetch(path);
+    const headers = { ...(options.headers || {}), 'Authorization': `Bearer ${AUTH_TOKEN}` };
+    const r = await fetch(path, { ...options, headers });
+    if (r.status === 401) { logout(); return null; }
     if (!r.ok) return null;
     return await r.json();
   } catch { return null; }
@@ -1213,7 +1289,7 @@ async function loadAgenda(dateOverride) {
 
 async function cancelAppointment(id) {
   if (!confirm('Cancelar esta consulta?')) return;
-  const res = await fetch(`/v1/appointments/${id}/cancel`, { method: 'POST' });
+  const res = await api(`/v1/appointments/${id}/cancel`, { method: 'POST' });
   if (res.ok) {
     showToast('Consulta cancelada.', 'warn');
     loadAgenda();
@@ -1517,7 +1593,7 @@ async function saveAppointment() {
   };
 
   try {
-    const res = await fetch(`/v1/clinics/${CLINIC_ID}/appointments`, {
+    const res = await api(`/v1/clinics/${CLINIC_ID}/appointments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -1657,7 +1733,15 @@ function selectCalDay(dateStr) {
 
 // ─── Init ─────────────────────────────────────────────────────
 
-loadDashboard();
+function init() {
+  loadDashboard();
+}
+
+// Verifica se já tem token ao carregar
+if (AUTH_TOKEN) {
+  document.getElementById('login-screen').classList.add('hidden');
+  init();
+}
 </script>
 </body>
 </html>
