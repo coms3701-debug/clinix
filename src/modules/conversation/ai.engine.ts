@@ -137,6 +137,21 @@ const TOOLS = [
           required: ['appointmentId'],
         },
       },
+      {
+        name: 'join_waitlist',
+        description:
+          'Inscreve o paciente na lista de encaixe por desistência. ' +
+          'Chamar quando list_available_slots retornar vazio e o paciente aceitar entrar na lista. ' +
+          'Quando um horário abrir, o paciente será notificado automaticamente pelo WhatsApp.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            serviceId: { type: 'STRING', description: 'ID do serviço desejado (opcional)' },
+            professionalId: { type: 'STRING', description: 'ID do profissional preferido (opcional)' },
+          },
+          required: [],
+        },
+      },
     ],
   },
 ];
@@ -197,7 +212,10 @@ async function executeTool(
       });
       const grouped = groupSlotsByDate(slots, 3, 5);
       if (grouped.size === 0) {
-        return { error: 'Nenhum horário disponível nos próximos 14 dias. Oriente o paciente a ligar para a recepção.' };
+        return {
+          no_slots: true,
+          message: 'Nenhum horário disponível nos próximos 14 dias. Informe o paciente com empatia e ofereça a lista de encaixe por desistência (join_waitlist). NÃO oriente a ligar para a recepção como primeiro recurso.',
+        };
       }
       const result = [];
       for (const [date, daySlots] of grouped) {
@@ -275,6 +293,30 @@ async function executeTool(
       return { success: true };
     }
 
+    case 'join_waitlist': {
+      const serviceId      = str('serviceId') || undefined;
+      const professionalId = str('professionalId') || undefined;
+
+      // Verifica se já está na lista de espera para evitar duplicata
+      const existing = await prisma.waitlistEntry.findFirst({
+        where: { clinicId: ctx.clinic.id, patientId: ctx.patient.id, status: 'WAITING' },
+      });
+      if (existing) {
+        return { already_registered: true };
+      }
+
+      await prisma.waitlistEntry.create({
+        data: {
+          clinicId: ctx.clinic.id,
+          patientId: ctx.patient.id,
+          status: 'WAITING',
+          ...(serviceId      ? { serviceId }      : {}),
+          ...(professionalId ? { professionalId } : {}),
+        },
+      });
+      return { success: true };
+    }
+
     default:
       return { error: `Ferramenta desconhecida: ${name}` };
   }
@@ -323,7 +365,7 @@ export async function processWithAI(params: {
   const todayStr = format(new Date(), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR });
   const servicesList = clinic.services
     .filter((s) => s.active)
-    .map((s) => `• ${s.name} (${s.durationMin} min)`)
+    .map((s) => `• ${s.name} — serviceId: "${s.id}" (${s.durationMin} min)`)
     .join('\n');
 
   const systemInstruction =
@@ -339,9 +381,11 @@ export async function processWithAI(params: {
     `- Na primeira mensagem do paciente, apresente-se pelo nome e da clínica, depois pergunte como pode ajudar.\n` +
     `- Exemplo de saudação: "Olá! Sou a ${clinic.assistantName}, da ${clinic.name}. Como posso te ajudar? 😊"\n\n` +
     `INTELIGÊNCIA NO AGENDAMENTO:\n` +
+    `- Os serviceIds estão listados acima em "Serviços" — use-os DIRETAMENTE em list_available_slots, sem chamar list_services antes.\n` +
     `- Entenda nomes abreviados: "consulta" = "Consulta Dermatológica", "botox" = serviço de botox, etc.\n` +
-    `- Se o paciente mencionar serviço E profissional juntos (ex: "consulta com a Dra. Ana"), vá DIRETO para list_available_slots sem fazer perguntas intermediárias.\n` +
-    `- Se mencionar só o serviço, chame list_available_slots imediatamente — não peça mais detalhes antes.\n` +
+    `- Se o paciente mencionar serviço E profissional juntos, vá DIRETO para list_available_slots usando o serviceId correto da lista acima.\n` +
+    `- Se mencionar só o serviço, chame list_available_slots imediatamente com o serviceId correspondente — não peça mais detalhes antes.\n` +
+    `- Para obter o professionalId, chame list_professionals apenas se necessário. Nunca invente um ID.\n` +
     `- Minimize perguntas: só peça nome e CPF DEPOIS de mostrar os horários e o paciente escolher um.\n` +
     `- Se o paciente escolher um horário, confirme assim: "Ótimo! Para finalizar, me diz seu nome completo e CPF 😊"\n\n` +
     `REGRAS:\n` +
@@ -350,7 +394,12 @@ export async function processWithAI(params: {
     `- Respostas curtas (máx. 300 caracteres quando possível)\n` +
     `- Horários: "📅 Ter, 29/04 – 09:00 / 10:00 / 11:00"\n` +
     `- Após agendar: envie resumo com serviço, profissional, data e horário\n` +
-    `- Paciente identificado pelo WhatsApp (ID: ${patient.id})`;
+    `- Paciente identificado pelo WhatsApp (ID: ${patient.id})\n\n` +
+    `QUANDO NÃO HÁ HORÁRIOS DISPONÍVEIS (list_available_slots retornar no_slots: true):\n` +
+    `- Use EXATAMENTE este texto: "No momento nossa agenda está sem horários disponíveis para os próximos dias. 😔\n\nMas posso te colocar na *lista de encaixe* — se algum paciente cancelar, você será avisado(a) na hora pelo WhatsApp para garantir o horário. Quer entrar na lista? 😊"\n` +
+    `- Se o paciente confirmar (sim/quero/pode ser/etc.), chame join_waitlist e confirme: "✅ Prontinho! Você está na nossa lista de encaixe. Assim que surgir uma vaga, te avisamos aqui pelo WhatsApp. 😊"\n` +
+    `- Se o paciente já estiver na lista (already_registered: true), diga: "✅ Você já está na nossa lista de encaixe! Assim que surgir uma vaga, te avisamos aqui pelo WhatsApp. 😊"\n` +
+    `- Só mencione a recepção se o paciente explicitamente pedir ou recusar a lista de encaixe.`;
 
   const toolCtx: ToolCtx = { clinic, patient };
 

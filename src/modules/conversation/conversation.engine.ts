@@ -35,6 +35,8 @@ interface ConvCtx {
   patientCpf?: string;
 
   // Dados temporários de seleção
+  waitlistServiceId?: string;
+  waitlistProfessionalId?: string | null;
   profList?: Array<{ id: string; name: string }>;
   slotsByDate?: Record<string, Array<{ professionalId: string; professionalName: string; date: string; time: string; startsAt: string; endsAt: string }>>;
   timesForDate?: Array<{ professionalId: string; professionalName: string; date: string; time: string; startsAt: string; endsAt: string }>;
@@ -322,6 +324,34 @@ export async function processMessage(params: {
       break;
     }
 
+    // ── Confirmação de entrada na lista de encaixe ──────────────────────────
+    case 'waitlist_confirm': {
+      if (['sim', 's', '1', 'quero', 'pode ser', 'claro'].includes(lower)) {
+        const existing = await prisma.waitlistEntry.findFirst({
+          where: { clinicId: clinic.id, patientId: patient.id, status: 'WAITING' },
+        });
+        if (existing) {
+          await send(`✅ Você já está na nossa lista de encaixe! Assim que surgir uma vaga, te avisamos aqui pelo WhatsApp. 😊\n\nDigite *menu* para voltar.`);
+        } else {
+          await prisma.waitlistEntry.create({
+            data: {
+              clinicId: clinic.id,
+              patientId: patient.id,
+              status: 'WAITING',
+              ...(ctx.serviceId      ? { serviceId: ctx.serviceId }           : {}),
+              ...(ctx.professionalId ? { professionalId: ctx.professionalId } : {}),
+            },
+          });
+          await send(`✅ Prontinho! Você está na nossa lista de encaixe.\n\nAssim que surgir uma vaga, te avisamos aqui pelo WhatsApp. 😊\n\nDigite *menu* para voltar.`);
+        }
+        await save({}, ConversationState.DONE);
+      } else {
+        await send(`Ok! Se precisar de algo mais, é só chamar. 😊\n\nDigite *menu* para voltar ao início.`);
+        await save({}, ConversationState.IDLE);
+      }
+      break;
+    }
+
     // ── Lista de cancelamento ────────────────────────────────────────────────
     case 'cancel_list': {
       const cancelList = ctx.cancelList ?? [];
@@ -419,7 +449,12 @@ async function sendDateList(
   });
 
   if (slots.length === 0) {
-    await send(`Não há horários disponíveis nos próximos 14 dias. Entre em contato com a recepção.\n\nDigite *menu* para voltar.`);
+    await send(
+      `No momento nossa agenda está sem horários disponíveis para os próximos dias. 😔\n\n` +
+      `Mas posso te colocar na *lista de encaixe* — se algum paciente cancelar, você será avisado(a) na hora pelo WhatsApp para garantir o horário.\n\n` +
+      `Quer entrar na lista? Responda *SIM* ou digite *menu* para voltar.`,
+    );
+    await save({ step: 'waitlist_confirm', serviceId, serviceName, professionalId, professionalName });
     return;
   }
 
