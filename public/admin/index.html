@@ -622,6 +622,11 @@
         <span class="nav-badge">3</span>
       </div>
 
+      <div class="nav-item" onclick="showSection('encaixe', this)">
+        <span class="nav-icon">🔔</span> Lista de Encaixe
+        <span class="nav-badge" id="badge-encaixe" style="display:none">0</span>
+      </div>
+
       <div class="nav-section" style="margin-top:8px;">
         <div class="nav-section-label">Ferramentas</div>
       </div>
@@ -858,6 +863,22 @@
         </div>
       </div>
 
+      <!-- ══ LISTA DE ENCAIXE ════════════════════════════════ -->
+      <div class="section" id="sec-encaixe">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🔔 Lista de Encaixe por Desistência</div>
+            <div class="card-action" onclick="loadWaitlist()" style="cursor:pointer;">↻ Atualizar</div>
+          </div>
+          <div class="card-body">
+            <div id="waitlist-empty" style="display:none;text-align:center;padding:32px;color:var(--text-muted);font-size:13px;">
+              ✅ Nenhum paciente aguardando encaixe no momento.
+            </div>
+            <div id="waitlist-list" style="display:flex;flex-direction:column;gap:12px;"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- ══ CAMPANHAS ══════════════════════════════════════ -->
       <div class="section" id="sec-campanhas">
         <div class="card">
@@ -1075,6 +1096,7 @@ const titles = {
   agenda: ['Agenda', 'Consultas e horários'],
   pacientes: ['Pacientes', 'Gestão de pacientes'],
   chat: ['Chat WhatsApp', 'Conversas em tempo real'],
+  encaixe: ['Lista de Encaixe', 'Pacientes aguardando vaga por desistência'],
   campanhas: ['Campanhas', 'Marketing e recall'],
   automacoes: ['Automações', 'Fluxos automatizados'],
   config: ['Configurações', 'Configurações do sistema'],
@@ -1105,6 +1127,7 @@ function showSection(name, navEl, mobileId) {
   if (name === 'agenda') initCalendar();
   if (name === 'pacientes') loadPatients();
   if (name === 'chat') initChat();
+  if (name === 'encaixe') loadWaitlist();
   if (name === 'campanhas') renderCampaigns();
   if (name === 'automacoes') renderAutomations();
 }
@@ -1301,6 +1324,78 @@ async function cancelAppointment(id) {
 
 // ─── Pacientes ────────────────────────────────────────────────
 let allPatients = [];
+
+// ─── Lista de Encaixe ─────────────────────────────────────────
+async function loadWaitlist() {
+  if (!CLINIC_ID) return;
+  const list = await api(`/v1/clinics/${CLINIC_ID}/waitlist`);
+  renderWaitlist(list || []);
+}
+
+function renderWaitlist(list) {
+  const container = document.getElementById('waitlist-list');
+  const empty = document.getElementById('waitlist-empty');
+  const badge = document.getElementById('badge-encaixe');
+
+  // Atualiza badge no menu
+  if (list.length > 0) {
+    badge.textContent = list.length;
+    badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
+  }
+
+  if (!list.length) {
+    container.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+
+  empty.style.display = 'none';
+  container.innerHTML = list.map((entry, i) => {
+    const name = entry.patient?.fullName || 'Paciente sem nome';
+    const phone = entry.patient?.whatsappNumber || '';
+    const service = entry.service?.name || 'Qualquer serviço';
+    const prof = entry.professional?.name || 'Qualquer profissional';
+    const since = new Date(entry.createdAt);
+    const sinceStr = `${since.getDate().toString().padStart(2,'0')}/${(since.getMonth()+1).toString().padStart(2,'0')} às ${since.getHours().toString().padStart(2,'0')}:${since.getMinutes().toString().padStart(2,'0')}`;
+    const color = avatarColor(name);
+    const ini = initials(name);
+    return `
+      <div style="display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.03);border:1px solid var(--card-border);border-radius:12px;padding:14px 16px;">
+        <div style="width:40px;height:40px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0;">${ini}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:2px;">${name}</div>
+          <div style="font-size:12px;color:var(--text-muted);">📋 ${service} &nbsp;·&nbsp; 👩‍⚕️ ${prof}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">📱 ${phone} &nbsp;·&nbsp; Na lista desde ${sinceStr}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+          <button onclick="fulfillWaitlist('${entry.id}')"
+            style="padding:6px 14px;border-radius:8px;border:none;background:rgba(16,185,129,.15);color:#10b981;font-size:12px;font-weight:600;cursor:pointer;">
+            ✅ Encaixado
+          </button>
+          <button onclick="removeWaitlist('${entry.id}')"
+            style="padding:6px 14px;border-radius:8px;border:none;background:rgba(239,68,68,.1);color:#ef4444;font-size:12px;font-weight:600;cursor:pointer;">
+            ✕ Remover
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function fulfillWaitlist(id) {
+  if (!confirm('Marcar este paciente como encaixado?')) return;
+  await api(`/v1/waitlist/${id}/fulfill`, { method: 'POST' });
+  loadWaitlist();
+}
+
+async function removeWaitlist(id) {
+  if (!confirm('Remover este paciente da lista de encaixe?')) return;
+  await api(`/v1/waitlist/${id}/remove`, { method: 'POST' });
+  loadWaitlist();
+}
+
+// ─────────────────────────────────────────────────────────────
 
 async function loadPatients() {
   if (!CLINIC_ID) {
