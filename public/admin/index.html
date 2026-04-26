@@ -30,9 +30,9 @@
   }
   .login-btn:hover { background: #4f46e5; }
   .login-error { color: #ef4444; font-size: .85rem; text-align: center; display: none; }
-  .login-logo { font-size: 3rem; text-align: center; }
+  .login-logo { font-size: 3rem; text-align: center; display: flex; justify-content: center; margin-bottom: 8px; }
 </style>
-<title>ClinicBot Pro — Painel Admin</title>
+<title>Clínica AL Aguiar Marques — Painel Admin</title>
 <style>
   /* ─── Reset & Base ─────────────────────────────────────── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -96,14 +96,14 @@
   }
   .sidebar-logo {
     width: 46px; height: 46px;
-    background: rgba(255,255,255,.2);
+    background: rgba(255,255,255,.12);
     border-radius: 12px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 22px;
     flex-shrink: 0;
+    overflow: hidden;
   }
-  .sidebar-brand h1 { font-size: 17px; font-weight: 700; color: #fff; line-height: 1.2; }
-  .sidebar-brand p { font-size: 11.5px; color: rgba(255,255,255,.75); margin-top: 2px; }
+  .sidebar-brand h1 { font-size: 14px; font-weight: 700; color: #fff; line-height: 1.2; }
+  .sidebar-brand p { font-size: 11px; color: rgba(255,255,255,.75); margin-top: 2px; letter-spacing: 0.04em; }
 
   /* Nav */
   .sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 0; }
@@ -579,8 +579,17 @@
 <!-- ── Tela de Login ─────────────────────────────────────────── -->
 <div id="login-screen">
   <div class="login-box">
-    <div class="login-logo">🏥</div>
-    <h2>ClinicBot Pro</h2>
+    <div class="login-logo">
+      <svg width="72" height="72" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+        <rect width="40" height="40" rx="10" fill="#F5E6E0"/>
+        <rect x="22" y="8" width="3" height="22" rx="1.5" fill="#BF7B72"/>
+        <rect x="22" y="27" width="10" height="3" rx="1.5" fill="#BF7B72"/>
+        <path d="M8 30 L15 10 L22 30" stroke="#BF7B72" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <line x1="10.5" y1="22" x2="19.5" y2="22" stroke="#BF7B72" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M6 34 Q14 30 20 34 Q26 38 32 34" stroke="#BF7B72" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.6"/>
+      </svg>
+    </div>
+    <h2>Clínica AL Aguiar Marques</h2>
     <p>Painel Administrativo</p>
     <input type="text" id="login-user" placeholder="Usuário" autocomplete="username" />
     <input type="password" id="login-pass" placeholder="Senha" autocomplete="current-password"
@@ -597,10 +606,24 @@
   <!-- ═══ SIDEBAR ═══════════════════════════════════════════ -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <div class="sidebar-logo">🏥</div>
+      <div class="sidebar-logo">
+        <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+          <rect width="40" height="40" rx="10" fill="#F5E6E0"/>
+          <!-- Traço vertical do L -->
+          <rect x="22" y="8" width="3" height="22" rx="1.5" fill="#BF7B72"/>
+          <!-- Base do L -->
+          <rect x="22" y="27" width="10" height="3" rx="1.5" fill="#BF7B72"/>
+          <!-- Letra A estilizada -->
+          <path d="M8 30 L15 10 L22 30" stroke="#BF7B72" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <!-- Travessa do A -->
+          <line x1="10.5" y1="22" x2="19.5" y2="22" stroke="#BF7B72" stroke-width="2.2" stroke-linecap="round"/>
+          <!-- Floreio decorativo -->
+          <path d="M6 34 Q14 30 20 34 Q26 38 32 34" stroke="#BF7B72" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.6"/>
+        </svg>
+      </div>
       <div class="sidebar-brand">
-        <h1>ClinicBot Pro</h1>
-        <p>Sistema Inteligente</p>
+        <h1>Clínica AL Aguiar Marques</h1>
+        <p>dermatologia</p>
       </div>
     </div>
 
