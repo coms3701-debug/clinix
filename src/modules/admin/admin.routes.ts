@@ -299,15 +299,27 @@ export async function adminRoutes(app: FastifyInstance) {
 
   // ── Lista de Encaixe ──────────────────────────────────────
   app.get<{ Params: { id: string } }>('/v1/clinics/:id/waitlist', async (req) => {
-    return prisma.waitlistEntry.findMany({
+    const entries = await prisma.waitlistEntry.findMany({
       where: { clinicId: req.params.id, status: 'WAITING' },
       include: {
         patient: { select: { id: true, fullName: true, whatsappNumber: true } },
-        service: { select: { id: true, name: true } },
-        professional: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: 'asc' },
     });
+
+    const [services, professionals] = await Promise.all([
+      prisma.service.findMany({ where: { clinicId: req.params.id }, select: { id: true, name: true } }),
+      prisma.professional.findMany({ where: { clinicId: req.params.id }, select: { id: true, name: true } }),
+    ]);
+
+    const serviceMap: Record<string, string> = Object.fromEntries(services.map((s) => [s.id, s.name]));
+    const profMap: Record<string, string> = Object.fromEntries(professionals.map((p) => [p.id, p.name]));
+
+    return entries.map((e) => ({
+      ...e,
+      service: e.serviceId ? { id: e.serviceId, name: serviceMap[e.serviceId] ?? 'N/A' } : null,
+      professional: e.professionalId ? { id: e.professionalId, name: profMap[e.professionalId] ?? 'N/A' } : null,
+    }));
   });
 
   app.post<{ Params: { id: string } }>('/v1/waitlist/:id/fulfill', async (req, reply) => {
