@@ -41,7 +41,6 @@ await app.register(fastifyFormBody); // Necessário para parsear form-encoded do
 await app.register(fastifyStatic, {
   root: path.join(__dirname, '..', 'public'),
   prefix: '/',
-  decorateReply: false,
 });
 
 // ── Autenticação ───────────────────────────────────────────────
