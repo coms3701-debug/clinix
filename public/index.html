@@ -1,46 +1,266 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ClinicBot Pro</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: #0a1120; color: #e2e8f0;
-    min-height: 100vh; display: flex; align-items: center; justify-content: center;
-  }
-  .container { text-align: center; padding: 40px 20px; }
-  .logo {
-    width: 80px; height: 80px;
-    background: linear-gradient(135deg, #4f46e5, #06b6d4);
-    border-radius: 24px; display: flex; align-items: center; justify-content: center;
-    font-size: 40px; margin: 0 auto 20px;
-  }
-  h1 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
-  p { color: #64748b; margin-bottom: 32px; }
-  .links { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-  a {
-    padding: 12px 24px; border-radius: 12px; font-weight: 600; font-size: 14px;
-    text-decoration: none; transition: all .2s; display: flex; align-items: center; gap: 8px;
-  }
-  .btn-admin { background: #4f46e5; color: #fff; }
-  .btn-admin:hover { background: #4338ca; transform: translateY(-2px); }
-  .btn-demo { background: rgba(37,211,102,.15); color: #25d366; border: 1px solid rgba(37,211,102,.3); }
-  .btn-demo:hover { background: rgba(37,211,102,.25); transform: translateY(-2px); }
-  .badge { font-size: 11px; background: rgba(255,255,255,.15); padding: 2px 8px; border-radius: 10px; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clínica AL Aguiar Marques — Dermatologia | Ipanema, Rio de Janeiro</title>
+  <meta name="description" content="Clínica de Dermatologia da Dra. Ana Luiza Aguiar Marques de Rezende. Agende sua consulta pelo WhatsApp. Ipanema, Rio de Janeiro.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #1a6b5a;
+      --primary-light: #22896f;
+      --primary-dark: #145245;
+      --accent: #e8f5f1;
+      --text: #1a2e2a;
+      --text-muted: #5a7a74;
+      --white: #ffffff;
+      --whatsapp: #25d366;
+      --whatsapp-dark: #1da851;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      color: var(--text);
+      background: var(--white);
+      line-height: 1.6;
+    }
+
+    header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(26,107,90,0.1);
+      z-index: 100;
+      padding: 0 24px;
+    }
+
+    .header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 70px;
+    }
+
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon { width: 42px; height: 42px; background: linear-gradient(135deg, var(--primary), var(--primary-light)); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .logo-text { font-size: 15px; font-weight: 700; color: var(--primary); line-height: 1.2; }
+    .logo-sub { font-size: 11px; font-weight: 400; color: var(--text-muted); }
+
+    nav { display: flex; gap: 32px; align-items: center; }
+    nav a { text-decoration: none; color: var(--text-muted); font-size: 14px; font-weight: 500; transition: color 0.2s; }
+    nav a:hover { color: var(--primary); }
+
+    .btn-whatsapp-header { background: var(--whatsapp); color: white; padding: 10px 20px; border-radius: 50px; font-size: 14px; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
+    .btn-whatsapp-header:hover { background: var(--whatsapp-dark); transform: translateY(-1px); }
+
+    .hero { min-height: 100vh; background: linear-gradient(135deg, #f0faf7 0%, #e8f5f1 50%, #f8fffd 100%); display: flex; align-items: center; padding: 100px 24px 60px; }
+    .hero-inner { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+    .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(26,107,90,0.1); color: var(--primary); padding: 6px 16px; border-radius: 50px; font-size: 13px; font-weight: 600; margin-bottom: 24px; }
+    .hero h1 { font-size: 48px; font-weight: 800; line-height: 1.1; color: var(--text); margin-bottom: 20px; }
+    .hero h1 span { color: var(--primary); }
+    .hero p { font-size: 18px; color: var(--text-muted); margin-bottom: 36px; line-height: 1.7; }
+    .hero-btns { display: flex; gap: 16px; flex-wrap: wrap; }
+
+    .btn-primary { background: var(--whatsapp); color: white; padding: 16px 32px; border-radius: 50px; font-size: 16px; font-weight: 700; text-decoration: none; display: flex; align-items: center; gap: 10px; transition: all 0.2s; box-shadow: 0 4px 20px rgba(37,211,102,0.3); }
+    .btn-primary:hover { background: var(--whatsapp-dark); transform: translateY(-2px); }
+    .btn-secondary { background: white; color: var(--primary); padding: 16px 32px; border-radius: 50px; font-size: 16px; font-weight: 600; text-decoration: none; border: 2px solid var(--primary); transition: all 0.2s; }
+    .btn-secondary:hover { background: var(--accent); transform: translateY(-2px); }
+
+    .hero-card { background: white; border-radius: 24px; padding: 40px; box-shadow: 0 20px 60px rgba(26,107,90,0.12); }
+    .hero-card-header { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; padding-bottom: 24px; border-bottom: 1px solid #f0f0f0; }
+    .doctor-avatar { width: 64px; height: 64px; background: linear-gradient(135deg, var(--primary), var(--primary-light)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+    .doctor-info h3 { font-size: 17px; font-weight: 700; color: var(--text); }
+    .doctor-info p { font-size: 13px; color: var(--text-muted); }
+    .doctor-crm { font-size: 12px; color: var(--primary); font-weight: 600; margin-top: 2px; }
+    .horarios h4 { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 12px; }
+    .horario-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; }
+    .horario-item:last-child { border-bottom: none; }
+    .horario-dia { color: var(--text-muted); }
+    .horario-hora { color: var(--primary); font-weight: 600; }
+    .badge-disponivel { background: rgba(37,211,102,0.1); color: var(--whatsapp-dark); padding: 2px 10px; border-radius: 50px; font-size: 11px; font-weight: 600; }
+
+    .services { padding: 80px 24px; background: white; }
+    .section-header { text-align: center; max-width: 600px; margin: 0 auto 56px; }
+    .section-tag { display: inline-block; background: var(--accent); color: var(--primary); padding: 6px 16px; border-radius: 50px; font-size: 13px; font-weight: 600; margin-bottom: 16px; }
+    .section-header h2 { font-size: 36px; font-weight: 800; color: var(--text); margin-bottom: 16px; }
+    .section-header p { font-size: 16px; color: var(--text-muted); }
+    .services-grid { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .service-card { background: #fafffe; border: 1px solid rgba(26,107,90,0.1); border-radius: 20px; padding: 32px; transition: all 0.3s; }
+    .service-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(26,107,90,0.1); border-color: var(--primary); }
+    .service-icon { width: 56px; height: 56px; background: var(--accent); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 26px; margin-bottom: 20px; }
+    .service-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+    .service-card p { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
+
+    .about { padding: 80px 24px; background: linear-gradient(135deg, #f0faf7, #e8f5f1); }
+    .about-inner { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+    .about-content h2 { font-size: 36px; font-weight: 800; margin-bottom: 20px; }
+    .about-content p { font-size: 16px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.7; }
+    .about-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 32px; }
+    .stat-card { background: white; border-radius: 16px; padding: 20px; text-align: center; }
+    .stat-number { font-size: 32px; font-weight: 800; color: var(--primary); }
+    .stat-label { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+    .about-visual { background: white; border-radius: 24px; padding: 40px; box-shadow: 0 20px 60px rgba(26,107,90,0.1); }
+    .about-visual h3 { font-size: 18px; font-weight: 700; margin-bottom: 20px; color: var(--primary); }
+    .feature-item { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 20px; }
+    .feature-icon { width: 40px; height: 40px; background: var(--accent); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .feature-text h4 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .feature-text p { font-size: 13px; color: var(--text-muted); }
+
+    .cta { padding: 80px 24px; background: linear-gradient(135deg, var(--primary-dark), var(--primary)); text-align: center; }
+    .cta h2 { font-size: 40px; font-weight: 800; color: white; margin-bottom: 16px; }
+    .cta p { font-size: 18px; color: rgba(255,255,255,0.8); margin-bottom: 40px; }
+    .cta-btn { display: inline-flex; align-items: center; gap: 12px; background: var(--whatsapp); color: white; padding: 20px 48px; border-radius: 50px; font-size: 18px; font-weight: 700; text-decoration: none; transition: all 0.2s; box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
+    .cta-btn:hover { background: var(--whatsapp-dark); transform: translateY(-3px); }
+
+    .location { padding: 80px 24px; background: white; }
+    .location-inner { max-width: 800px; margin: 0 auto; text-align: center; }
+    .location-card { background: #fafffe; border: 1px solid rgba(26,107,90,0.15); border-radius: 24px; padding: 40px; margin-top: 40px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+    .location-item { text-align: center; }
+    .location-item-icon { font-size: 32px; margin-bottom: 12px; }
+    .location-item h4 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .location-item p { font-size: 14px; color: var(--text-muted); }
+
+    footer { background: var(--text); color: rgba(255,255,255,0.7); padding: 32px 24px; text-align: center; font-size: 13px; }
+    footer a { color: rgba(255,255,255,0.5); text-decoration: none; margin-left: 16px; }
+    footer a:hover { color: white; }
+
+    .whatsapp-float { position: fixed; bottom: 28px; right: 28px; background: var(--whatsapp); color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 4px 20px rgba(37,211,102,0.4); text-decoration: none; transition: all 0.2s; z-index: 999; }
+    .whatsapp-float:hover { transform: scale(1.1); }
+
+    @media (max-width: 768px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 40px; }
+      .hero h1 { font-size: 32px; }
+      .services-grid { grid-template-columns: 1fr; }
+      .about-inner { grid-template-columns: 1fr; }
+      .location-card { grid-template-columns: 1fr; }
+      nav { display: none; }
+      .about-stats { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <div class="logo">🏥</div>
-    <h1>ClinicBot Pro</h1>
-    <p>Sistema de agendamento inteligente via WhatsApp para clínicas</p>
-    <div class="links">
-      <a href="/admin" class="btn-admin">📊 Painel Admin <span class="badge">Dashboard</span></a>
-      <a href="/demo" class="btn-demo">💬 Demo WhatsApp <span class="badge">Teste</span></a>
+
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">🌿</div>
+        <div>
+          <div class="logo-text">AL Aguiar Marques</div>
+          <div class="logo-sub">Dermatologia</div>
+        </div>
+      </div>
+      <nav>
+        <a href="#servicos">Serviços</a>
+        <a href="#sobre">Sobre</a>
+        <a href="#localizacao">Localização</a>
+      </nav>
+      <a href="https://wa.me/5521969408081?text=Olá!%20Gostaria%20de%20agendar%20uma%20consulta." class="btn-whatsapp-header" target="_blank">💬 Agendar via WhatsApp</a>
     </div>
-  </div>
+  </header>
+
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-content">
+        <div class="hero-badge">✨ Dermatologia de excelência</div>
+        <h1>Cuidado com a sua <span>pele em boas mãos</span></h1>
+        <p>Agende sua consulta com a Dra. Ana Luiza Aguiar Marques de Rezende de forma rápida e prática pelo WhatsApp, sem filas e sem espera.</p>
+        <div class="hero-btns">
+          <a href="https://wa.me/5521969408081?text=Olá!%20Gostaria%20de%20agendar%20uma%20consulta%20na%20Clínica%20AL%20Aguiar%20Marques." class="btn-primary" target="_blank">💬 Agendar pelo WhatsApp</a>
+          <a href="#servicos" class="btn-secondary">Ver serviços</a>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="hero-card-header">
+          <div class="doctor-avatar">👩‍⚕️</div>
+          <div class="doctor-info">
+            <h3>Dra. Ana Luiza Aguiar Marques</h3>
+            <p>Dermatologista</p>
+            <div class="doctor-crm">CRM-RJ • Ipanema, Rio de Janeiro</div>
+          </div>
+        </div>
+        <div class="horarios">
+          <h4>📅 Horários de atendimento</h4>
+          <div class="horario-item"><span class="horario-dia">Segunda a Sexta</span><span class="horario-hora">08h – 18h</span></div>
+          <div class="horario-item"><span class="horario-dia">Sábado</span><span class="horario-hora">08h – 12h</span></div>
+          <div class="horario-item"><span class="horario-dia">Agendamento</span><span class="badge-disponivel">✅ Online 24h</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="services" id="servicos">
+    <div class="section-header">
+      <div class="section-tag">Nossos Serviços</div>
+      <h2>Tratamentos especializados para sua pele</h2>
+      <p>Oferecemos uma gama completa de procedimentos dermatológicos com tecnologia de ponta.</p>
+    </div>
+    <div class="services-grid">
+      <div class="service-card"><div class="service-icon">🔬</div><h3>Consulta Dermatológica</h3><p>Avaliação completa da saúde da pele, diagnóstico de doenças dermatológicas e orientações personalizadas para cada paciente.</p></div>
+      <div class="service-card"><div class="service-icon">✨</div><h3>Laser e Tecnologia</h3><p>Tratamentos com laser de última geração para manchas, acne, rejuvenescimento e remoção de lesões com segurança e eficácia.</p></div>
+      <div class="service-card"><div class="service-icon">💆</div><h3>Procedimentos Estéticos</h3><p>Harmonização facial, preenchimentos, toxina botulínica e tratamentos estéticos realizados com técnica precisa e resultados naturais.</p></div>
+      <div class="service-card"><div class="service-icon">🧴</div><h3>Tratamento de Acne</h3><p>Protocolos individualizados para controle e tratamento da acne em todas as fases da vida, com acompanhamento contínuo.</p></div>
+      <div class="service-card"><div class="service-icon">🔍</div><h3>Dermatoscopia</h3><p>Análise avançada de lesões cutâneas e pintas para diagnóstico precoce de melanoma e outras doenças da pele.</p></div>
+      <div class="service-card"><div class="service-icon">🌟</div><h3>Peeling e Rejuvenescimento</h3><p>Tratamentos de renovação celular para pele mais jovem, uniforme e radiante, com diferentes profundidades e indicações.</p></div>
+    </div>
+  </section>
+
+  <section class="about" id="sobre">
+    <div class="about-inner">
+      <div class="about-content">
+        <div class="section-tag">Sobre a Clínica</div>
+        <h2>Excelência em dermatologia no coração de Ipanema</h2>
+        <p>A Clínica AL Aguiar Marques é referência em dermatologia no Rio de Janeiro, oferecendo atendimento humanizado e tratamentos baseados nas mais recentes evidências científicas.</p>
+        <p>Com a Dra. Ana Luiza Aguiar Marques de Rezende, cada paciente recebe atenção personalizada e um plano de tratamento adequado às suas necessidades.</p>
+        <div class="about-stats">
+          <div class="stat-card"><div class="stat-number">+500</div><div class="stat-label">Pacientes atendidos</div></div>
+          <div class="stat-card"><div class="stat-number">+10</div><div class="stat-label">Anos de experiência</div></div>
+          <div class="stat-card"><div class="stat-number">6+</div><div class="stat-label">Especialidades</div></div>
+          <div class="stat-card"><div class="stat-number">5★</div><div class="stat-label">Avaliação dos pacientes</div></div>
+        </div>
+      </div>
+      <div class="about-visual">
+        <h3>Por que nos escolher?</h3>
+        <div class="feature-item"><div class="feature-icon">💬</div><div class="feature-text"><h4>Agendamento pelo WhatsApp</h4><p>Marque sua consulta a qualquer hora, sem precisar ligar ou esperar.</p></div></div>
+        <div class="feature-item"><div class="feature-icon">🔔</div><div class="feature-text"><h4>Lembrete automático</h4><p>Receba uma mensagem no WhatsApp 24h antes da sua consulta.</p></div></div>
+        <div class="feature-item"><div class="feature-icon">👩‍⚕️</div><div class="feature-text"><h4>Atendimento especializado</h4><p>Dra. Ana Luiza com formação e especialização em dermatologia.</p></div></div>
+        <div class="feature-item"><div class="feature-icon">📍</div><div class="feature-text"><h4>Localização privilegiada</h4><p>No coração de Ipanema, de fácil acesso e com estacionamento próximo.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <h2>Agende sua consulta agora</h2>
+    <p>Fale diretamente com nossa equipe pelo WhatsApp e marque seu horário em minutos.</p>
+    <a href="https://wa.me/5521969408081?text=Olá!%20Gostaria%20de%20agendar%20uma%20consulta%20na%20Clínica%20AL%20Aguiar%20Marques." class="cta-btn" target="_blank">💬 Falar no WhatsApp</a>
+  </section>
+
+  <section class="location" id="localizacao">
+    <div class="location-inner">
+      <div class="section-header" style="margin-bottom: 0;">
+        <div class="section-tag">Localização</div>
+        <h2>Onde nos encontrar</h2>
+        <p>Estamos no coração de Ipanema, Rio de Janeiro.</p>
+      </div>
+      <div class="location-card">
+        <div class="location-item"><div class="location-item-icon">📍</div><h4>Endereço</h4><p>Visconde de Pirajá, 550<br>Sala 1204 – Ipanema<br>Rio de Janeiro – RJ</p></div>
+        <div class="location-item"><div class="location-item-icon">🕐</div><h4>Horários</h4><p>Seg a Sex: 08h – 18h<br>Sábado: 08h – 12h<br>Agendamento: 24h</p></div>
+        <div class="location-item"><div class="location-item-icon">💬</div><h4>Contato</h4><p><a href="https://wa.me/5521969408081" target="_blank" style="color: var(--primary); font-weight: 600;">WhatsApp</a><br>Agendamento online<br>sem filas</p></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>© 2026 Clínica AL Aguiar Marques — Aguiar Marques Serviços Médicos LTDA<a href="/admin">Admin</a></p>
+  </footer>
+
+  <a href="https://wa.me/5521969408081?text=Olá!%20Gostaria%20de%20agendar%20uma%20consulta." class="whatsapp-float" target="_blank" title="Agendar pelo WhatsApp">💬</a>
+
 </body>
 </html>
