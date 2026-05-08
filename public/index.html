@@ -343,15 +343,11 @@
       cursor: default;
     }
 
-    .servico-card:hover {
-      background: var(--brown-deep);
-    }
+    .servico-card:hover { background: var(--brown-deep); }
 
     .servico-card:hover .servico-icon,
     .servico-card:hover .servico-name,
-    .servico-card:hover .servico-desc {
-      color: white;
-    }
+    .servico-card:hover .servico-desc { color: white; }
 
     .servico-icon {
       font-size: 1.5rem;
@@ -498,11 +494,7 @@
       letter-spacing: 0.15em;
     }
 
-    footer a {
-      color: rgba(255,255,255,0.2);
-      text-decoration: none;
-    }
-
+    footer a { color: rgba(255,255,255,0.2); text-decoration: none; }
     footer a:hover { color: rgba(255,255,255,0.5); }
 
     /* ── WHATSAPP FLOAT ── */
@@ -541,21 +533,42 @@
     @media (max-width: 900px) {
       nav { padding: 1rem 1.5rem; }
       .nav-links { display: none; }
+
+      /* Hero */
       #hero { grid-template-columns: 1fr; min-height: auto; }
-      .hero-left { padding: 5rem 2rem 3rem; }
+      .hero-left { padding: 5rem 1.5rem 2.5rem; }
       .hero-right { height: 55vh; min-height: 320px; }
-      .logo-monogram { font-size: clamp(5rem, 20vw, 7rem); }
-      .hero-badge {
-        bottom: 1.2rem;
-        right: 1.2rem;
-        padding: 0.8rem 1rem;
-      }
-      .hero-badge strong { font-size: 1.3rem; }
-      .hero-badge span { font-size: 0.55rem; }
-      section { padding: 5rem 2rem; }
-      #sobre, #contato { grid-template-columns: 1fr; gap: 3rem; }
+      .logo-monogram { font-size: clamp(5rem, 18vw, 7rem); }
+      .hero-badge { bottom: 1.2rem; right: 1.2rem; padding: 0.7rem 0.9rem; }
+      .hero-badge strong { font-size: 1.2rem; }
+      .hero-badge span { font-size: 0.52rem; }
+
+      /* Sections */
+      section { padding: 4rem 1.5rem; }
+      #agendamento { padding: 4rem 1.5rem; }
+
+      /* Sobre */
+      #sobre { grid-template-columns: 1fr; gap: 2.5rem; }
+      .sobre-stats { grid-template-columns: 1fr 1fr; gap: 1rem; }
+      .stat-item { padding: 1.2rem 1rem; }
+      .stat-number { font-size: 1.5rem; word-break: break-word; }
+      .stat-label { font-size: 0.6rem; letter-spacing: 0.12em; }
+
+      /* Serviços */
       .servicos-grid { grid-template-columns: 1fr; }
-      footer { flex-direction: column; gap: 1rem; text-align: center; padding: 2rem; }
+
+      /* Contato */
+      #contato { grid-template-columns: 1fr; gap: 2.5rem; }
+      .contato-item-value { font-size: 0.82rem; word-break: break-word; }
+
+      /* Footer */
+      footer { flex-direction: column; gap: 1rem; text-align: center; padding: 2rem 1.5rem; }
+    }
+
+    @media (max-width: 400px) {
+      .sobre-stats { grid-template-columns: 1fr; }
+      .stat-number { font-size: 1.4rem; }
+      .hero-title { font-size: 2.4rem; }
     }
   </style>
 </head>
