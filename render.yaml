@@ -49,6 +49,10 @@ services:
         sync: false
       - key: TWILIO_FROM_NUMBER
         sync: false
+      # URL pública do webhook (valida assinatura do Twilio). Após o 1º deploy,
+      # preencha com: https://SEU-APP.onrender.com/webhooks/twilio
+      - key: TWILIO_WEBHOOK_URL
+        sync: false
       # ─── IA opcional (Gemini): preencher se for usar ───
       - key: GEMINI_API_KEY
         sync: false

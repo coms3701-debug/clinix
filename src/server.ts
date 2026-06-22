@@ -21,6 +21,9 @@ process.stdout.write('🚀 Clinix: iniciando servidor...\n');
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = Fastify({
+  // Atrás do proxy do Render/Fly: faz request.protocol refletir o https real
+  // (x-forwarded-proto), essencial p/ a validação de assinatura do Twilio.
+  trustProxy: true,
   logger: {
     level: config.logLevel,
     ...(config.nodeEnv === 'development'
