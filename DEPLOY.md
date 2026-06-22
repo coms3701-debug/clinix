@@ -29,19 +29,20 @@ Painel: `/admin` · Demo: `/demo`.
 
 ## Opção B — Fly.io (Docker)
 
-Há um `Dockerfile` pronto.
+Há um `Dockerfile` e um `fly.toml` prontos.
 
 ```bash
-fly launch --no-deploy            # gera fly.toml; defina internal_port = 3000
-fly postgres create               # cria o Postgres e dá ATTACH (seta DATABASE_URL)
-fly postgres attach <nome-do-pg>
+fly launch --no-deploy --copy-config   # reaproveita o fly.toml do repo
+fly postgres create                    # cria o Postgres gerenciado
+fly postgres attach <nome-do-pg>       # seta DATABASE_URL como secret
 fly secrets set TWILIO_ACCOUNT_SID=... TWILIO_AUTH_TOKEN=... \
                TWILIO_FROM_NUMBER='whatsapp:+14155238886' \
-               JWT_SECRET="$(openssl rand -hex 32)" NODE_ENV=production
+               JWT_SECRET="$(openssl rand -hex 32)"
 fly deploy
 ```
 
-O `CMD` do Dockerfile roda `prisma migrate deploy` antes de subir o servidor.
+As migrations rodam pelo `release_command` do `fly.toml` (`prisma migrate deploy`)
+antes de cada versão entrar no ar. Health check em `/health` já configurado.
 
 ## Variáveis de ambiente (referência)
 
