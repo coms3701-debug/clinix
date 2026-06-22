@@ -11,6 +11,8 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
+    "postinstall": "prisma generate",
+    "db:deploy": "prisma migrate deploy",
     "worker": "tsx src/workers/reminder.worker.ts",
     "worker:dev": "tsx watch src/workers/reminder.worker.ts",
     "seed": "tsx prisma/seed.ts",

@@ -1,0 +1,48 @@
+# Blueprint Render — Clinix (web Node + Postgres grátis)
+# Deploy: https://dashboard.render.com → New → Blueprint → aponte para este repo.
+# As 3 variáveis com `sync: false` (Twilio) você preenche no painel após o 1º deploy.
+
+databases:
+  - name: clinix-db
+    plan: free
+    databaseName: clinix
+    user: clinix
+
+services:
+  - type: web
+    name: clinix
+    runtime: node
+    plan: free
+    region: oregon
+    # --include=dev garante prisma CLI + typescript mesmo com NODE_ENV=production.
+    # O postinstall (prisma generate) roda dentro do npm ci.
+    buildCommand: npm ci --include=dev && npm run build
+    # migrate deploy é idempotente: aplica o schema no Postgres a cada boot.
+    startCommand: npx prisma migrate deploy && node dist/server.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: clinix-db
+          property: connectionString
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true # Render gera um segredo forte automaticamente
+      - key: DEFAULT_TIMEZONE
+        value: America/Sao_Paulo
+      - key: REMINDER_HOUR
+        value: "18"
+      - key: LOG_LEVEL
+        value: info
+      # ─── Twilio: preencher no painel (Environment) ───
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_FROM_NUMBER
+        sync: false
+      # ─── IA opcional (Gemini): preencher se for usar ───
+      - key: GEMINI_API_KEY
+        sync: false
