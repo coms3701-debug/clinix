@@ -1,8 +1,9 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { createHmac, timingSafeEqual, randomBytes } from 'crypto';
 import { z } from 'zod';
 
 const TOKEN_EXPIRY_MS = 8 * 60 * 60 * 1000; // 8 horas
+const SESSION_COOKIE = 'clinix_session';
 
 function getSecret(): string {
   return process.env['JWT_SECRET'] ?? 'dev-secret-troque-em-producao';
@@ -35,6 +36,24 @@ export function verifyToken(token: string): boolean {
   }
 }
 
+// Lê um cookie do header sem depender de plugin externo.
+function readCookie(req: FastifyRequest, name: string): string | null {
+  const raw = req.headers['cookie'];
+  if (!raw) return null;
+  for (const part of raw.split(';')) {
+    const idx = part.indexOf('=');
+    if (idx === -1) continue;
+    const key = part.slice(0, idx).trim();
+    if (key === name) return decodeURIComponent(part.slice(idx + 1).trim());
+  }
+  return null;
+}
+
+function sessionCookie(token: string, maxAgeSec: number): string {
+  const secure = process.env['NODE_ENV'] === 'production' ? '; Secure' : '';
+  return `${SESSION_COOKIE}=${token}; HttpOnly; Path=/; Max-Age=${maxAgeSec}; SameSite=Lax${secure}`;
+}
+
 export async function authRoutes(app: FastifyInstance) {
   app.post<{ Body: unknown }>('/v1/auth/login', async (req, reply) => {
     const schema = z.object({
@@ -56,23 +75,46 @@ export async function authRoutes(app: FastifyInstance) {
     }
 
     const token = createToken(parsed.data.username);
+    // Cookie de sessão: protege também as páginas estáticas (/, /demo).
+    reply.header('Set-Cookie', sessionCookie(token, TOKEN_EXPIRY_MS / 1000));
     return { token, expiresIn: TOKEN_EXPIRY_MS / 1000 };
+  });
+
+  app.post('/v1/auth/logout', async (_req, reply) => {
+    reply.header('Set-Cookie', sessionCookie('', 0)); // expira o cookie
+    return { ok: true };
   });
 }
 
-// Hook para proteger rotas admin
+// Gate global: NADA é público, exceto a porta de entrada do login,
+// o health check e o webhook do Twilio.
 export function requireAuth(app: FastifyInstance) {
-  app.addHook('preHandler', async (req, reply) => {
-    // Rotas públicas — não precisam de token
-    const publicPaths = ['/health', '/v1/auth/login', '/webhooks'];
-    if (publicPaths.some((p) => req.url.startsWith(p))) return;
-    if (!req.url.startsWith('/v1/')) return;
+  // Prefixos liberados sem autenticação.
+  const publicPrefixes = [
+    '/health',          // health check do provedor
+    '/webhooks',        // entrega de mensagens do Twilio
+    '/v1/auth/login',   // endpoint de login
+    '/admin',           // SPA de login (mostra a tela de senha; dados em /v1 seguem protegidos)
+    '/favicon',         // evita redirect no favicon do browser
+  ];
 
-    const auth = req.headers['authorization'];
-    const token = auth?.startsWith('Bearer ') ? auth.slice(7) : null;
-
-    if (!token || !verifyToken(token)) {
-      return reply.status(401).send({ error: 'Não autorizado. Faça login novamente.' });
+  app.addHook('onRequest', async (req, reply) => {
+    const path = req.url.split('?')[0];
+    if (publicPrefixes.some((p) => path === p || path.startsWith(p + '/') || path.startsWith(p))) {
+      return;
     }
+
+    const header = req.headers['authorization'];
+    const bearer = header?.startsWith('Bearer ') ? header.slice(7) : null;
+    const token = bearer ?? readCookie(req, SESSION_COOKIE);
+
+    if (token && verifyToken(token)) return;
+
+    // Navegação de browser → manda pro login. Chamada de API → 401.
+    const accept = String(req.headers['accept'] ?? '');
+    if (accept.includes('text/html')) {
+      return reply.redirect('/admin');
+    }
+    return reply.status(401).send({ error: 'Não autorizado. Faça login novamente.' });
   });
 }

@@ -1065,6 +1065,7 @@ async function doLogin() {
 function logout() {
   sessionStorage.removeItem('clinix_token');
   AUTH_TOKEN = null;
+  fetch('/v1/auth/logout', { method: 'POST' }).catch(() => {});
   document.getElementById('login-screen').classList.remove('hidden');
 }
 

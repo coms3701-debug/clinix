@@ -36,6 +36,12 @@ services:
         value: "18"
       - key: LOG_LEVEL
         value: info
+      # ─── Acesso ao sistema (login do site) — DEFINIR no painel ───
+      # Sem isso o login cai no default fraco (admin/clinix2024). Troque!
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
       # ─── Twilio: preencher no painel (Environment) ───
       - key: TWILIO_ACCOUNT_SID
         sync: false

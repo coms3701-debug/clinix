@@ -10,13 +10,18 @@ web (só o worker opcional usa). O `server.ts` já escuta em `0.0.0.0:$PORT`.
    O `render.yaml` cria automaticamente:
    - **Postgres free** (`clinix-db`)
    - **Web service** `clinix` (build + migrate + start já configurados)
-3. Após o primeiro deploy, abra o serviço → **Environment** e preencha as 3
-   variáveis Twilio (estão como `sync: false`):
+3. Após o primeiro deploy, abra o serviço → **Environment** e preencha:
+   - `ADMIN_USERNAME` e `ADMIN_PASSWORD` — **login do site** (obrigatório trocar;
+     sem isso cai no default fraco `admin`/`clinix2024`).
    - `TWILIO_ACCOUNT_SID`
    - `TWILIO_AUTH_TOKEN`
    - `TWILIO_FROM_NUMBER`  (ex.: `whatsapp:+14155238886`)
    - `GEMINI_API_KEY` (opcional — ativa a IA da conversa)
    `DATABASE_URL` e `JWT_SECRET` são injetados/gerados pelo Render sozinho.
+
+> 🔒 **Site privado:** todo o site exige login (home, `/demo` e `/admin`).
+> Visitas sem sessão são redirecionadas para a tela de senha em `/admin`.
+> Apenas `/health` e `/webhooks/twilio` ficam abertos (necessários p/ Render e Twilio).
 4. (1ª vez) Popular dados demo: aba **Shell** do serviço → `npm run seed`.
 5. No Twilio Console → WhatsApp Sandbox/Número, aponte o webhook para:
    `https://SEU-APP.onrender.com/webhooks/twilio`
