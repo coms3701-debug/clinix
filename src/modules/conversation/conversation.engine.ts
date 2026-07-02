@@ -125,11 +125,11 @@ export async function processMessage(params: {
         text,
         send,
       });
+      return;
     } catch (err) {
       console.error('[Engine] Erro no modo IA, caindo para modo clássico:', err);
       // continua para o modo clássico abaixo
     }
-    return;
   }
 
   // ── Modo clássico (máquina de estados) ───────────────────────────────────
