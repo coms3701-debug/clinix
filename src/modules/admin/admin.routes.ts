@@ -74,6 +74,108 @@ export async function adminRoutes(app: FastifyInstance) {
     },
   );
 
+  // ── Configurações (edição de cadastro) ───────────────────
+  // Visão completa p/ a tela de configurações: inclui inativos,
+  // horários e vínculos profissional↔serviço.
+  app.get<{ Params: { id: string } }>('/v1/clinics/:id/full', async (req, reply) => {
+    const clinic = await prisma.clinic.findUnique({
+      where: { id: req.params.id },
+      include: {
+        professionals: {
+          orderBy: { name: 'asc' },
+          include: { workSchedules: { orderBy: { dayOfWeek: 'asc' } }, services: true },
+        },
+        services: { orderBy: { name: 'asc' } },
+      },
+    });
+    if (!clinic) return reply.status(404).send({ error: 'Clínica não encontrada' });
+    return clinic;
+  });
+
+  app.patch<{ Params: { id: string }; Body: unknown }>('/v1/clinics/:id', async (req, reply) => {
+    const schema = z.object({
+      name: z.string().min(2).optional(),
+      address: z.string().optional(),
+      assistantName: z.string().min(1).optional(),
+      whatsappNumber: z.string().min(8).optional(),
+      reminderHourLocal: z.number().int().min(0).max(23).optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return reply.status(400).send(parsed.error);
+
+    const clinic = await prisma.clinic.update({ where: { id: req.params.id }, data: parsed.data });
+    return clinic;
+  });
+
+  app.patch<{ Params: { id: string }; Body: unknown }>('/v1/services/:id', async (req, reply) => {
+    const schema = z.object({
+      name: z.string().min(2).optional(),
+      description: z.string().nullable().optional(),
+      durationMin: z.number().int().min(10).optional(),
+      priceCents: z.number().int().min(0).optional(),
+      requestsTriagePhotos: z.boolean().optional(),
+      active: z.boolean().optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return reply.status(400).send(parsed.error);
+
+    const service = await prisma.service.update({ where: { id: req.params.id }, data: parsed.data });
+    return service;
+  });
+
+  app.patch<{ Params: { id: string }; Body: unknown }>('/v1/professionals/:id', async (req, reply) => {
+    const schema = z.object({
+      name: z.string().min(2).optional(),
+      registration: z.string().min(1).optional(),
+      bio: z.string().nullable().optional(),
+      active: z.boolean().optional(),
+      serviceIds: z.array(z.string()).optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return reply.status(400).send(parsed.error);
+
+    const { serviceIds, ...data } = parsed.data;
+    const prof = await prisma.professional.update({
+      where: { id: req.params.id },
+      data: {
+        ...data,
+        ...(serviceIds
+          ? { services: { deleteMany: {}, create: serviceIds.map((sid) => ({ serviceId: sid })) } }
+          : {}),
+      },
+    });
+    return prof;
+  });
+
+  // Substitui TODOS os horários do profissional pela lista enviada
+  // (a tela de configurações edita a grade completa e salva de uma vez).
+  app.put<{ Params: { id: string }; Body: unknown }>(
+    '/v1/professionals/:id/schedules',
+    async (req, reply) => {
+      const schema = z.array(
+        z.object({
+          dayOfWeek: z.number().int().min(0).max(6),
+          startTime: z.string().regex(/^\d{2}:\d{2}$/),
+          endTime: z.string().regex(/^\d{2}:\d{2}$/),
+          slotMinutes: z.number().int().min(5).max(240).default(30),
+        }),
+      );
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) return reply.status(400).send(parsed.error);
+
+      await prisma.$transaction([
+        prisma.workSchedule.deleteMany({ where: { professionalId: req.params.id } }),
+        prisma.workSchedule.createMany({
+          data: parsed.data.map((s) => ({ ...s, professionalId: req.params.id })) as any,
+        }),
+      ]);
+      return prisma.workSchedule.findMany({
+        where: { professionalId: req.params.id },
+        orderBy: { dayOfWeek: 'asc' },
+      });
+    },
+  );
+
   // ── Agendamentos ─────────────────────────────────────────
   app.get<{ Params: { id: string }; Querystring: { date?: string; professionalId?: string; status?: string } }>(
     '/v1/clinics/:id/appointments',

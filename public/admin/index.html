@@ -31,6 +31,28 @@
   .login-btn:hover { background: #4f46e5; }
   .login-error { color: #ef4444; font-size: .85rem; text-align: center; display: none; }
   .login-logo { font-size: 3rem; text-align: center; display: flex; justify-content: center; margin-bottom: 8px; }
+
+  /* ── Configurações (tabelas editáveis) ── */
+  .cfg-label { display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.5px; }
+  .cfg-input {
+    width:100%; padding:9px 11px; border-radius:8px; border:1px solid var(--card-border);
+    background:rgba(0,0,0,.25); color:var(--text-primary); font-size:13px; box-sizing:border-box;
+  }
+  .cfg-input:focus { border-color:#6366f1; outline:none; }
+  .cfg-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .cfg-table th {
+    text-align:left; padding:8px 10px; font-size:11px; text-transform:uppercase; letter-spacing:.5px;
+    color:var(--text-muted); border-bottom:1px solid var(--card-border);
+  }
+  .cfg-table td { padding:6px 8px; border-bottom:1px solid var(--card-border); vertical-align:middle; }
+  .cfg-table .cfg-input { min-width:70px; }
+  .cfg-btn {
+    padding:7px 12px; border-radius:8px; border:none; cursor:pointer; font-size:12px; font-weight:600;
+    background:#6366f1; color:#fff;
+  }
+  .cfg-btn.danger { background:transparent; color:#ef4444; border:1px solid rgba(239,68,68,.4); }
+  .cfg-btn:hover { opacity:.85; }
+  .cfg-chip { display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--text-secondary); margin-right:10px; white-space:nowrap; }
 </style>
 <title>Clínica AL Aguiar Marques — Painel Admin</title>
 <style>
@@ -914,31 +936,97 @@
 
       <!-- ══ CONFIGURAÇÕES ══════════════════════════════════ -->
       <div class="section" id="sec-config">
-        <div class="card">
+
+        <!-- Dados da Clínica -->
+        <div class="card" style="margin-bottom:20px;">
           <div class="card-header">
-            <div class="card-title">⚙️ Configurações do Sistema</div>
+            <div class="card-title">🏥 Dados da Clínica</div>
+            <div class="card-action" onclick="saveClinicConfig()">💾 Salvar</div>
           </div>
           <div class="card-body">
-            <div style="display:flex;flex-direction:column;gap:18px;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;">
               <div>
-                <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">Integração Twilio</div>
-                <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:14px;">
-                  <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--success);">
-                    <span>✅</span> Twilio WhatsApp conectado
-                  </div>
-                  <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Configure TWILIO_ACCOUNT_SID e TWILIO_AUTH_TOKEN no arquivo .env</div>
-                </div>
+                <label class="cfg-label">Nome da clínica</label>
+                <input class="cfg-input" id="cfg-clinic-name" />
               </div>
               <div>
-                <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">Webhook URL</div>
-                <div style="background:rgba(0,0,0,.2);border:1px solid var(--card-border);border-radius:10px;padding:12px;font-size:12px;color:var(--text-muted);font-family:monospace;word-break:break-all;">
-                  POST https://seu-dominio.com/webhooks/twilio
-                </div>
+                <label class="cfg-label">Endereço</label>
+                <input class="cfg-input" id="cfg-clinic-address" />
               </div>
               <div>
-                <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">Lembrete de Véspera</div>
-                <div style="font-size:13px;color:var(--text-secondary);">Enviado todos os dias às 18h para consultas do dia seguinte. Configurável via REMINDER_HOUR no .env</div>
+                <label class="cfg-label">Nome da assistente virtual (bot)</label>
+                <input class="cfg-input" id="cfg-clinic-assistant" />
               </div>
+              <div>
+                <label class="cfg-label">WhatsApp Twilio (com +código país)</label>
+                <input class="cfg-input" id="cfg-clinic-whatsapp" placeholder="+16614854721" />
+              </div>
+              <div>
+                <label class="cfg-label">Hora do lembrete de véspera (0–23)</label>
+                <input class="cfg-input" id="cfg-clinic-reminder" type="number" min="0" max="23" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Procedimentos -->
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-header">
+            <div class="card-title">💉 Procedimentos / Serviços</div>
+            <div class="card-action" onclick="addServiceRow()">➕ Novo procedimento</div>
+          </div>
+          <div class="card-body" style="overflow-x:auto;">
+            <table class="cfg-table">
+              <thead><tr>
+                <th style="min-width:160px;">Nome</th>
+                <th style="min-width:220px;">Descrição (o bot usa nas respostas)</th>
+                <th>Duração (min)</th>
+                <th>Preço (R$)</th>
+                <th title="Pedir fotos de triagem antes da consulta">Triagem 📷</th>
+                <th>Ativo</th>
+                <th></th>
+              </tr></thead>
+              <tbody id="cfg-services-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Profissionais -->
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-header">
+            <div class="card-title">👩‍⚕️ Profissionais</div>
+            <div class="card-action" onclick="addProfessionalRow()">➕ Novo profissional</div>
+          </div>
+          <div class="card-body" style="overflow-x:auto;">
+            <table class="cfg-table">
+              <thead><tr>
+                <th style="min-width:160px;">Nome</th>
+                <th>Registro (CRM/CRO)</th>
+                <th style="min-width:180px;">Bio / foco</th>
+                <th style="min-width:180px;">Procedimentos que atende</th>
+                <th>Ativo</th>
+                <th></th>
+              </tr></thead>
+              <tbody id="cfg-profs-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Horários -->
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-header">
+            <div class="card-title">🕐 Horários de Atendimento</div>
+          </div>
+          <div class="card-body" id="cfg-schedules-body"></div>
+        </div>
+
+        <!-- Info do sistema (somente leitura) -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">⚙️ Sistema</div></div>
+          <div class="card-body">
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.9;">
+              <div><b>Webhook Twilio:</b> <span style="font-family:monospace;">POST /webhooks/twilio</span> (configurar no console Twilio apontando para o domínio do sistema)</div>
+              <div><b>Credenciais</b> (Twilio/Gemini/login) ficam nas variáveis de ambiente do servidor, não aqui.</div>
             </div>
           </div>
         </div>
@@ -1135,6 +1223,7 @@ function showSection(name, navEl, mobileId) {
   if (name === 'encaixe') loadWaitlist();
   if (name === 'campanhas') renderCampaigns();
   if (name === 'automacoes') renderAutomations();
+  if (name === 'config') loadConfig();
 }
 
 // ─── Avatar ───────────────────────────────────────────────────
@@ -1832,6 +1921,205 @@ function selectCalDay(dateStr) {
 }
 
 // ─── Init ─────────────────────────────────────────────────────
+
+// ─── Configurações (cadastro editável) ────────────────────────
+let CFG = null;
+const DAY_NAMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
+async function loadConfig() {
+  if (!CLINIC_ID) return;
+  CFG = await api(`/v1/clinics/${CLINIC_ID}/full`);
+  if (!CFG) { showToast('Erro ao carregar configurações', 'error'); return; }
+
+  // Clínica
+  document.getElementById('cfg-clinic-name').value = CFG.name || '';
+  document.getElementById('cfg-clinic-address').value = CFG.address || '';
+  document.getElementById('cfg-clinic-assistant').value = CFG.assistantName || '';
+  document.getElementById('cfg-clinic-whatsapp').value = CFG.whatsappNumber || '';
+  document.getElementById('cfg-clinic-reminder').value = CFG.reminderHourLocal ?? 18;
+
+  renderServicesTable();
+  renderProfessionalsTable();
+  renderSchedules();
+}
+
+async function saveClinicConfig() {
+  const body = {
+    name: document.getElementById('cfg-clinic-name').value.trim(),
+    address: document.getElementById('cfg-clinic-address').value.trim(),
+    assistantName: document.getElementById('cfg-clinic-assistant').value.trim(),
+    whatsappNumber: document.getElementById('cfg-clinic-whatsapp').value.trim(),
+    reminderHourLocal: parseInt(document.getElementById('cfg-clinic-reminder').value, 10) || 18,
+  };
+  const r = await api(`/v1/clinics/${CLINIC_ID}`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  showToast(r ? 'Dados da clínica salvos ✅' : 'Erro ao salvar', r ? 'success' : 'error');
+  if (r) loadConfig();
+}
+
+// ── Procedimentos ──
+function serviceRowHtml(s) {
+  const id = s?.id || '';
+  return `<tr data-service-id="${id}">
+    <td><input class="cfg-input" data-f="name" value="${(s?.name || '').replace(/"/g, '&quot;')}" placeholder="Ex.: Botox" /></td>
+    <td><input class="cfg-input" data-f="description" value="${(s?.description || '').replace(/"/g, '&quot;')}" placeholder="O que é, indicações…" /></td>
+    <td><input class="cfg-input" data-f="durationMin" type="number" min="10" step="5" value="${s?.durationMin ?? 30}" style="width:80px;" /></td>
+    <td><input class="cfg-input" data-f="price" type="number" min="0" step="10" value="${s ? (s.priceCents / 100) : ''}" style="width:100px;" /></td>
+    <td style="text-align:center;"><input type="checkbox" data-f="requestsTriagePhotos" ${s?.requestsTriagePhotos ? 'checked' : ''} /></td>
+    <td style="text-align:center;"><input type="checkbox" data-f="active" ${s?.active !== false ? 'checked' : ''} /></td>
+    <td><button class="cfg-btn" onclick="saveServiceRow(this)">💾</button></td>
+  </tr>`;
+}
+
+function renderServicesTable() {
+  document.getElementById('cfg-services-body').innerHTML =
+    (CFG.services || []).map(serviceRowHtml).join('') || '';
+}
+
+function addServiceRow() {
+  document.getElementById('cfg-services-body').insertAdjacentHTML('beforeend', serviceRowHtml(null));
+}
+
+async function saveServiceRow(btn) {
+  const tr = btn.closest('tr');
+  const get = (f) => tr.querySelector(`[data-f="${f}"]`);
+  const body = {
+    name: get('name').value.trim(),
+    description: get('description').value.trim() || null,
+    durationMin: parseInt(get('durationMin').value, 10) || 30,
+    priceCents: Math.round(parseFloat(get('price').value || '0') * 100),
+    requestsTriagePhotos: get('requestsTriagePhotos').checked,
+    active: get('active').checked,
+  };
+  if (!body.name) { showToast('Informe o nome do procedimento', 'warn'); return; }
+
+  const id = tr.dataset.serviceId;
+  let r;
+  if (id) {
+    r = await api(`/v1/services/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+  } else {
+    const { active, ...createBody } = body;
+    r = await api(`/v1/clinics/${CLINIC_ID}/services`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(createBody),
+    });
+  }
+  showToast(r ? 'Procedimento salvo ✅' : 'Erro ao salvar', r ? 'success' : 'error');
+  if (r) loadConfig();
+}
+
+// ── Profissionais ──
+function profRowHtml(p) {
+  const id = p?.id || '';
+  const linked = new Set((p?.services || []).map((x) => x.serviceId));
+  const chips = (CFG.services || []).filter((s) => s.active).map((s) =>
+    `<label class="cfg-chip"><input type="checkbox" data-svc="${s.id}" ${linked.has(s.id) ? 'checked' : ''}/> ${s.name}</label>`
+  ).join('');
+  return `<tr data-prof-id="${id}">
+    <td><input class="cfg-input" data-f="name" value="${(p?.name || '').replace(/"/g, '&quot;')}" placeholder="Dra. …" /></td>
+    <td><input class="cfg-input" data-f="registration" value="${(p?.registration || '').replace(/"/g, '&quot;')}" placeholder="CRM-RJ 12345" /></td>
+    <td><input class="cfg-input" data-f="bio" value="${(p?.bio || '').replace(/"/g, '&quot;')}" placeholder="Especialidade/foco" /></td>
+    <td>${chips || '<span style="font-size:12px;color:var(--text-muted);">cadastre procedimentos antes</span>'}</td>
+    <td style="text-align:center;"><input type="checkbox" data-f="active" ${p?.active !== false ? 'checked' : ''} /></td>
+    <td><button class="cfg-btn" onclick="saveProfRow(this)">💾</button></td>
+  </tr>`;
+}
+
+function renderProfessionalsTable() {
+  document.getElementById('cfg-profs-body').innerHTML =
+    (CFG.professionals || []).map(profRowHtml).join('') || '';
+}
+
+function addProfessionalRow() {
+  document.getElementById('cfg-profs-body').insertAdjacentHTML('beforeend', profRowHtml(null));
+}
+
+async function saveProfRow(btn) {
+  const tr = btn.closest('tr');
+  const get = (f) => tr.querySelector(`[data-f="${f}"]`);
+  const serviceIds = [...tr.querySelectorAll('[data-svc]')].filter((c) => c.checked).map((c) => c.dataset.svc);
+  const body = {
+    name: get('name').value.trim(),
+    registration: get('registration').value.trim(),
+    bio: get('bio').value.trim() || null,
+    active: get('active').checked,
+    serviceIds,
+  };
+  if (!body.name || !body.registration) { showToast('Informe nome e registro', 'warn'); return; }
+
+  const id = tr.dataset.profId;
+  let r;
+  if (id) {
+    r = await api(`/v1/professionals/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+  } else {
+    const { active, bio, ...rest } = body;
+    r = await api(`/v1/clinics/${CLINIC_ID}/professionals`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...rest, ...(bio ? { bio } : {}) }),
+    });
+  }
+  showToast(r ? 'Profissional salvo ✅' : 'Erro ao salvar', r ? 'success' : 'error');
+  if (r) loadConfig();
+}
+
+// ── Horários ──
+function scheduleRowHtml(ws) {
+  const options = DAY_NAMES.map((d, i) =>
+    `<option value="${i}" ${ws?.dayOfWeek === i ? 'selected' : ''}>${d}</option>`).join('');
+  return `<tr>
+    <td><select class="cfg-input" data-f="dayOfWeek" style="width:130px;">${options}</select></td>
+    <td><input class="cfg-input" data-f="startTime" value="${ws?.startTime || '08:00'}" style="width:80px;" placeholder="08:00" /></td>
+    <td><input class="cfg-input" data-f="endTime" value="${ws?.endTime || '17:00'}" style="width:80px;" placeholder="17:00" /></td>
+    <td><input class="cfg-input" data-f="slotMinutes" type="number" min="5" step="5" value="${ws?.slotMinutes ?? 30}" style="width:70px;" /></td>
+    <td><button class="cfg-btn danger" onclick="this.closest('tr').remove()">✕</button></td>
+  </tr>`;
+}
+
+function renderSchedules() {
+  const host = document.getElementById('cfg-schedules-body');
+  const profs = (CFG.professionals || []).filter((p) => p.active !== false);
+  if (!profs.length) { host.innerHTML = '<div style="font-size:13px;color:var(--text-muted);">Cadastre um profissional primeiro.</div>'; return; }
+  host.innerHTML = profs.map((p) => `
+    <div style="margin-bottom:22px;" data-sched-prof="${p.id}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text-primary);">${p.name}</div>
+        <div>
+          <button class="cfg-btn" style="background:transparent;border:1px solid var(--card-border);color:var(--text-secondary);margin-right:6px;" onclick="addScheduleRow('${p.id}')">➕ Dia</button>
+          <button class="cfg-btn" onclick="saveSchedules('${p.id}')">💾 Salvar horários</button>
+        </div>
+      </div>
+      <table class="cfg-table">
+        <thead><tr><th>Dia</th><th>Início</th><th>Fim</th><th>Consulta (min)</th><th></th></tr></thead>
+        <tbody id="cfg-sched-${p.id}">${(p.workSchedules || []).map(scheduleRowHtml).join('')}</tbody>
+      </table>
+    </div>`).join('');
+}
+
+function addScheduleRow(profId) {
+  document.getElementById(`cfg-sched-${profId}`).insertAdjacentHTML('beforeend', scheduleRowHtml(null));
+}
+
+async function saveSchedules(profId) {
+  const rows = [...document.querySelectorAll(`#cfg-sched-${profId} tr`)];
+  const list = rows.map((tr) => ({
+    dayOfWeek: parseInt(tr.querySelector('[data-f="dayOfWeek"]').value, 10),
+    startTime: tr.querySelector('[data-f="startTime"]').value.trim(),
+    endTime: tr.querySelector('[data-f="endTime"]').value.trim(),
+    slotMinutes: parseInt(tr.querySelector('[data-f="slotMinutes"]').value, 10) || 30,
+  }));
+  const bad = list.find((s) => !/^\d{2}:\d{2}$/.test(s.startTime) || !/^\d{2}:\d{2}$/.test(s.endTime));
+  if (bad) { showToast('Horários devem estar no formato HH:MM', 'warn'); return; }
+
+  const r = await api(`/v1/professionals/${profId}/schedules`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(list),
+  });
+  showToast(r ? 'Horários salvos ✅' : 'Erro ao salvar horários', r ? 'success' : 'error');
+  if (r) loadConfig();
+}
 
 function init() {
   loadDashboard();
