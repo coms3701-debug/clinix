@@ -18,6 +18,24 @@ import { toZonedTime } from 'date-fns-tz';
 
 process.stdout.write('🚀 Clinix: iniciando servidor...\n');
 
+// ── Guarda de produção: recusa subir com credenciais ausentes/fracas ──
+// Os fallbacks de dev (admin/clinix2024, dev-secret) são públicos no repo;
+// em produção o boot falha em vez de aceitar esses valores conhecidos.
+if (config.nodeEnv === 'production') {
+  const problems: string[] = [];
+  if (!process.env['ADMIN_USERNAME']) problems.push('ADMIN_USERNAME não definido');
+  if (!process.env['ADMIN_PASSWORD'] || process.env['ADMIN_PASSWORD'] === 'clinix2024') {
+    problems.push('ADMIN_PASSWORD ausente ou igual ao default público');
+  }
+  if (!process.env['JWT_SECRET'] || process.env['JWT_SECRET'] === 'dev-secret-troque-em-producao') {
+    problems.push('JWT_SECRET ausente ou igual ao default público');
+  }
+  if (problems.length) {
+    console.error('❌ Boot bloqueado por segurança:\n - ' + problems.join('\n - '));
+    process.exit(1);
+  }
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = Fastify({
