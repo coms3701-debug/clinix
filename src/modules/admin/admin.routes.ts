@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { format, subDays, startOfDay, endOfDay, addMinutes } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { getAvailableSlots } from '../appointment/availability.service.js';
+import { cancelAppointment } from '../appointment/appointment.service.js';
 
 export async function adminRoutes(app: FastifyInstance) {
   // ── Health ─────────────────────────────────────────────────
@@ -204,10 +205,8 @@ export async function adminRoutes(app: FastifyInstance) {
     const appt = await prisma.appointment.findUnique({ where: { id: req.params.id } });
     if (!appt) return reply.status(404).send({ error: 'Agendamento não encontrado' });
 
-    const updated = await prisma.appointment.update({
-      where: { id: req.params.id },
-      data: { status: 'CANCELLED', cancelledAt: new Date(), cancelReason: 'Cancelado pelo admin' },
-    });
+    // Usa o service p/ também disparar a notificação da lista de encaixe
+    const updated = await cancelAppointment(req.params.id, 'Cancelado pelo admin');
     return updated;
   });
 
