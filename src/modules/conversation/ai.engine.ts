@@ -9,8 +9,8 @@ import { prisma } from '../../database.js';
 import { config } from '../../config.js';
 import { getAvailableSlots, groupSlotsByDate } from '../appointment/availability.service.js';
 import { createAppointment, cancelAppointment, getPatientAppointments } from '../appointment/appointment.service.js';
-import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { formatInTimeZone } from 'date-fns-tz';
 
 // ─── Tipos da API REST do Gemini ──────────────────────────────────────────────
 
@@ -380,7 +380,8 @@ export async function processWithAI(params: {
   contents.push({ role: 'user', parts: [{ text }] });
 
   // System prompt
-  const todayStr = format(new Date(), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+  // No fuso da clínica: com o servidor em UTC, após as 21h (BRT) "hoje" viraria amanhã.
+  const todayStr = formatInTimeZone(new Date(), clinic.timezone, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR });
   const servicesList = clinic.services
     .filter((s) => s.active)
     .map((s) => `• ${s.name} — serviceId: "${s.id}" (${s.durationMin} min)`)

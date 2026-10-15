@@ -13,8 +13,9 @@ import { adminRoutes } from './modules/admin/admin.routes.js';
 import { authRoutes, requireAuth } from './modules/auth/auth.routes.js';
 import { prisma } from './database.js';
 import { twilioAdapter } from './providers/twilio.adapter.js';
-import { addDays, startOfDay, endOfDay, format } from 'date-fns';
+import { addDays, format } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
+import { localDayBounds, localYMD } from './utils/tz.js';
 
 process.stdout.write('🚀 Clinix: iniciando servidor...\n');
 
@@ -83,11 +84,11 @@ app.setNotFoundHandler(async (req, reply) => {
 // ── Envio direto de lembretes (sem Redis/BullMQ) ───────────────
 async function scheduleReminders() {
   const now = new Date();
-  const tomorrow = addDays(now, 1);
+  const tomorrow = localDayBounds(localYMD(addDays(now, 1), config.timezone), config.timezone);
   const appointments = await prisma.appointment.findMany({
     where: {
       status: { in: ['SCHEDULED', 'CONFIRMED'] },
-      startsAt: { gte: startOfDay(tomorrow), lte: endOfDay(tomorrow) },
+      startsAt: { gte: tomorrow.start, lte: tomorrow.end },
       remindersSent: 0,
     },
     include: {
@@ -122,21 +123,19 @@ async function scheduleReminders() {
 // ── Inicializar lembretes (cron simples via setInterval) ───────
 function startReminderScheduler() {
   const checkInterval = 60 * 60 * 1000; // a cada 1 hora
-  let lastRun: Date | null = null;
+  let lastRunDay: string | null = null;
 
   setInterval(async () => {
     const now = new Date();
-    const hour = now.getHours();
-    const alreadyRanToday =
-      lastRun !== null &&
-      lastRun.getDate() === now.getDate() &&
-      lastRun.getMonth() === now.getMonth();
+    // Hora e dia no fuso da clínica (o servidor roda em UTC).
+    const hour = toZonedTime(now, config.timezone).getHours();
+    const today = localYMD(now, config.timezone);
 
-    if (hour === config.reminderHour && !alreadyRanToday) {
+    if (hour === config.reminderHour && lastRunDay !== today) {
       app.log.info('[Scheduler] Disparando envio de lembretes de véspera...');
       try {
         await scheduleReminders();
-        lastRun = now;
+        lastRunDay = today;
       } catch (err) {
         app.log.error(err, '[Scheduler] Erro ao agendar lembretes');
       }

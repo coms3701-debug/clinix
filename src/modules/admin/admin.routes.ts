@@ -5,6 +5,8 @@ import { format, subDays, startOfDay, endOfDay, addMinutes } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { getAvailableSlots } from '../appointment/availability.service.js';
 import { cancelAppointment } from '../appointment/appointment.service.js';
+import { localDayBounds, localYMD } from '../../utils/tz.js';
+import { config } from '../../config.js';
 
 export async function adminRoutes(app: FastifyInstance) {
   // ── Health ─────────────────────────────────────────────────
@@ -182,12 +184,13 @@ export async function adminRoutes(app: FastifyInstance) {
     '/v1/clinics/:id/appointments',
     async (req) => {
       const { date, professionalId, status } = req.query;
-      const targetDate = date ? new Date(date) : new Date();
+      const clinic = await prisma.clinic.findUnique({ where: { id: req.params.id }, select: { timezone: true } });
+      const day = date ? localDayBounds(date, clinic?.timezone ?? config.timezone) : null;
 
       return prisma.appointment.findMany({
         where: {
           clinicId: req.params.id,
-          ...(date ? { startsAt: { gte: startOfDay(targetDate), lte: endOfDay(targetDate) } } : {}),
+          ...(day ? { startsAt: { gte: day.start, lte: day.end } } : {}),
           ...(professionalId ? { professionalId } : {}),
           ...(status ? { status: status as any } : {}),
         },
@@ -215,6 +218,9 @@ export async function adminRoutes(app: FastifyInstance) {
     const clinicId = req.params.id;
     const today = new Date();
     const thirtyDaysAgo = subDays(today, 30);
+    const clinic = await prisma.clinic.findUnique({ where: { id: clinicId }, select: { timezone: true } });
+    const tz = clinic?.timezone ?? config.timezone;
+    const todayLocal = localDayBounds(localYMD(today, tz), tz);
 
     const [
       totalScheduled,
@@ -230,7 +236,7 @@ export async function adminRoutes(app: FastifyInstance) {
       prisma.appointment.count({ where: { clinicId, status: 'NO_SHOW', startsAt: { gte: thirtyDaysAgo } } }),
       prisma.appointment.count({ where: { clinicId, status: 'CANCELLED', startsAt: { gte: thirtyDaysAgo } } }),
       prisma.appointment.findMany({
-        where: { clinicId, startsAt: { gte: startOfDay(today), lte: endOfDay(today) } },
+        where: { clinicId, startsAt: { gte: todayLocal.start, lte: todayLocal.end } },
         include: {
           professional: { select: { name: true } },
           service: { select: { name: true } },

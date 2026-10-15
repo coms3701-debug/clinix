@@ -1359,15 +1359,19 @@ function renderMiniChart(appts) {
 }
 
 // ─── Agenda do dia (aberta pelo calendário) ───────────────────
+// Data local do navegador em "YYYY-MM-DD" (toISOString() daria a data UTC,
+// que vira o dia seguinte a partir das 21h no Brasil).
+function localYMD(d = new Date()) { return d.toLocaleDateString('en-CA'); }
+
 async function loadAgenda(dateOverride) {
   const el = document.getElementById('agenda-full');
-  const date = dateOverride || new Date().toISOString().split('T')[0];
+  const date = dateOverride || localYMD();
 
   // Update header label
   const titleEl = document.getElementById('agenda-date-title');
   if (titleEl) {
     const d = new Date(date + 'T12:00:00');
-    const isToday = date === new Date().toISOString().split('T')[0];
+    const isToday = date === localYMD();
     titleEl.textContent = `📅 ${isToday ? 'Agenda de Hoje' : d.toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'2-digit', year:'numeric'})}`;
   }
 
@@ -1864,7 +1868,7 @@ function renderCalendar() {
 function renderCalMonth(year, month) {
   const firstDow   = new Date(year, month, 1).getDay(); // 0=Dom
   const daysInMon  = new Date(year, month + 1, 0).getDate();
-  const todayStr   = new Date().toISOString().split('T')[0];
+  const todayStr   = localYMD();
 
   let html = `<div>
     <div style="text-align:center;font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:10px;">
