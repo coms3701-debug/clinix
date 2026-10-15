@@ -51,7 +51,20 @@ export async function getAvailableSlots(params: {
   const nowUtc = new Date();
   const slots: AvailableSlot[] = [];
 
+  // Uma consulta para todos os agendamentos do período (antes era uma por
+  // horário candidato — centenas de idas ao banco por busca).
+  const busy = await prisma.appointment.findMany({
+    where: {
+      professionalId: { in: professionals.map((p) => p.id) },
+      status: { in: ['SCHEDULED', 'CONFIRMED'] },
+      startsAt: { lt: addDays(nowUtc, daysAhead + 2) },
+      endsAt: { gt: nowUtc },
+    },
+    select: { professionalId: true, startsAt: true, endsAt: true },
+  });
+
   for (const prof of professionals) {
+    const profBusy = busy.filter((a) => a.professionalId === prof.id);
     for (let dayOffset = 0; dayOffset <= daysAhead; dayOffset++) {
       const dateUtc = addDays(nowUtc, dayOffset);
       const dateLocal = toZonedTime(dateUtc, timezone);
@@ -87,14 +100,7 @@ export async function getAvailableSlots(params: {
         }
 
         // Verificar conflito com agendamentos existentes
-        const conflict = await prisma.appointment.findFirst({
-          where: {
-            professionalId: prof.id,
-            status: { in: ['SCHEDULED', 'CONFIRMED'] },
-            startsAt: { lt: slotEndUtc },
-            endsAt: { gt: slotStartUtc },
-          },
-        });
+        const conflict = profBusy.some((a) => a.startsAt < slotEndUtc && a.endsAt > slotStartUtc);
 
         if (!conflict) {
           slots.push({

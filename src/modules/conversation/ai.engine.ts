@@ -35,12 +35,24 @@ interface GeminiResponse {
 
 // ─── Chamada à API REST do Gemini ────────────────────────────────────────────
 
+class GeminiError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+  }
+}
+
+// Sobrecarga/cota/instabilidade do Google: vale tentar de novo.
+const RETRYABLE_STATUS = new Set([0, 429, 500, 502, 503, 504]);
+// Ferramentas que alteram dados — não podem ser repetidas com o modelo reserva.
+const WRITE_TOOLS = new Set(['create_booking', 'cancel_appointment', 'join_waitlist']);
+
 async function callGemini(params: {
+  model: string;
   contents: GeminiContent[];
   systemInstruction: string;
   tools: object[];
 }): Promise<GeminiResponse> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.gemini.model}:generateContent?key=${config.gemini.apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${params.model}:generateContent?key=${config.gemini.apiKey}`;
 
   const body = {
     system_instruction: {
@@ -49,24 +61,36 @@ async function callGemini(params: {
     contents: params.contents,
     tools: params.tools,
     generationConfig: {
-      maxOutputTokens: 600,
+      // Modelos com "thinking" gastam parte desse limite raciocinando; 600
+      // podia esgotar antes do texto e deixar a resposta vazia.
+      maxOutputTokens: 2048,
       temperature: 0.65,
     },
   };
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-
-  const json = await res.json() as GeminiResponse;
-
-  if (!res.ok || json.error) {
-    throw new Error(`Gemini API error ${res.status}: ${json.error?.message ?? JSON.stringify(json)}`);
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(30_000),
+      });
+      const json = (await res.json().catch(() => ({}))) as GeminiResponse;
+      if (!res.ok || json.error) {
+        throw new GeminiError(
+          `Gemini ${params.model} ${res.status}: ${json.error?.message ?? JSON.stringify(json).slice(0, 200)}`,
+          res.status,
+        );
+      }
+      return json;
+    } catch (err) {
+      const status = err instanceof GeminiError ? err.status : 0; // 0 = rede/timeout
+      if (!RETRYABLE_STATUS.has(status) || attempt >= 2) throw err;
+      console.warn(`[AI Engine Gemini] ${params.model} falhou (${status}), nova tentativa ${attempt + 1}/2`);
+      await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+    }
   }
-
-  return json;
 }
 
 // ─── Definição das ferramentas (function declarations) ────────────────────────
@@ -424,61 +448,81 @@ export async function processWithAI(params: {
 
   const toolCtx: ToolCtx = { clinic, patient };
 
-  try {
-    // Loop de agente — até 6 turnos
-    for (let turn = 0; turn < 6; turn++) {
-      const response = await callGemini({ contents, systemInstruction, tools: TOOLS });
+  // Principal → reserva estável. Se ambos falharem antes de qualquer ação,
+  // o erro sobe e o conversation.engine atende pelo menu clássico — a
+  // paciente nunca fica sem resposta.
+  const models = [...new Set([config.gemini.model, config.gemini.fallbackModel])];
 
-      const candidate = response.candidates?.[0];
-      if (!candidate) break;
+  for (let m = 0; m < models.length; m++) {
+    const model = models[m]!;
+    // Cópia por tentativa: as assinaturas de "thinking" são do modelo que as gerou.
+    const convo: GeminiContent[] = contents.map((c) => ({ ...c, parts: [...c.parts] }));
+    let wroteData = false;
 
-      const parts = candidate.content?.parts ?? [];
+    try {
+      // Loop de agente — até 6 turnos
+      for (let turn = 0; turn < 6; turn++) {
+        const response = await callGemini({ model, contents: convo, systemInstruction, tools: TOOLS });
 
-      // Verifica se há function calls
-      const funcParts = parts.filter((p) => p.functionCall);
+        const candidate = response.candidates?.[0];
+        const parts = candidate?.content?.parts ?? [];
 
-      if (funcParts.length === 0) {
-        // Resposta final de texto
-        const text = parts.map((p) => p.text ?? '').join('').trim();
-        if (text) await send(text);
+        // Verifica se há function calls
+        const funcParts = parts.filter((p) => p.functionCall);
+
+        if (funcParts.length === 0) {
+          // Resposta final de texto
+          const text = parts.map((p) => p.text ?? '').join('').trim();
+          if (!text) {
+            throw new GeminiError(`Gemini ${model}: resposta vazia (${candidate?.finishReason ?? 'sem candidato'})`, 0);
+          }
+          await send(text);
+          return;
+        }
+
+        // Adiciona resposta do modelo ao histórico (com function calls)
+        convo.push({ role: 'model', parts });
+
+        // Executa ferramentas e coleta respostas
+        const responseParts: GeminiPart[] = [];
+        for (const part of funcParts) {
+          const { name, args } = part.functionCall!;
+          console.log(`[AI Engine Gemini] Tool (${model}): ${name}`, args);
+          if (WRITE_TOOLS.has(name)) wroteData = true;
+          // Erro numa ferramenta volta para o modelo como resultado, para ele
+          // se corrigir — em vez de derrubar a conversa inteira.
+          let result: unknown;
+          try {
+            result = await executeTool(name, args, toolCtx);
+          } catch (err) {
+            console.error(`[AI Engine Gemini] Erro na ferramenta ${name}:`, err);
+            result = {
+              error: `Falha interna ao executar ${name}. Se for agendamento, chame list_available_slots ` +
+                'e tente de novo com os IDs exatos; se persistir, peça desculpas e ofereça a recepção.',
+            };
+          }
+          // Gemini exige que functionResponse.response seja sempre um objeto (nunca array)
+          const responseObj = Array.isArray(result) ? { result } : (result as object);
+          responseParts.push({
+            functionResponse: { name, response: responseObj },
+          });
+        }
+
+        // Adiciona respostas das ferramentas como mensagem do usuário
+        convo.push({ role: 'user', parts: responseParts });
+      }
+
+      await send('Não consegui processar. Digite *menu* para recomeçar ou ligue para a recepção. 🙏');
+      return;
+    } catch (err) {
+      console.error(`[AI Engine Gemini] Erro com ${model}:`, err);
+      if (wroteData) {
+        // Já agendou/cancelou/inscreveu: repetir com outro modelo poderia
+        // duplicar a ação. Orienta a paciente a conferir.
+        await send('Tive uma instabilidade ao finalizar. Me pergunte *meus agendamentos* em instantes para conferir, por favor. 🙏');
         return;
       }
-
-      // Adiciona resposta do modelo ao histórico (com function calls)
-      contents.push({ role: 'model', parts });
-
-      // Executa ferramentas e coleta respostas
-      const responseParts: GeminiPart[] = [];
-      for (const part of funcParts) {
-        const { name, args } = part.functionCall!;
-        console.log(`[AI Engine Gemini] Tool: ${name}`, args);
-        // Erro numa ferramenta volta para o modelo como resultado, para ele
-        // se corrigir — em vez de derrubar a conversa inteira.
-        let result: unknown;
-        try {
-          result = await executeTool(name, args, toolCtx);
-        } catch (err) {
-          console.error(`[AI Engine Gemini] Erro na ferramenta ${name}:`, err);
-          result = {
-            error: `Falha interna ao executar ${name}. Se for agendamento, chame list_available_slots ` +
-              'e tente de novo com os IDs exatos; se persistir, peça desculpas e ofereça a recepção.',
-          };
-        }
-        // Gemini exige que functionResponse.response seja sempre um objeto (nunca array)
-        const responseObj = Array.isArray(result) ? { result } : (result as object);
-        responseParts.push({
-          functionResponse: { name, response: responseObj },
-        });
-      }
-
-      // Adiciona respostas das ferramentas como mensagem do usuário
-      contents.push({ role: 'user', parts: responseParts });
+      if (m === models.length - 1) throw err;
     }
-
-    await send('Não consegui processar. Digite *menu* para recomeçar ou ligue para a recepção. 🙏');
-
-  } catch (err) {
-    console.error('[AI Engine Gemini] Erro:', err);
-    await send('Estou com uma instabilidade momentânea. Tente novamente em instantes. 🙏');
   }
 }

@@ -38,6 +38,9 @@ export const config = {
 
   gemini: {
     apiKey: process.env['GEMINI_API_KEY'] ?? '',   // opcional — ativa IA quando preenchido
-    model: optional('GEMINI_MODEL', 'gemini-3-flash-preview'),
+    // Principal: estável (GA) e rápido. Reserva: usado se o principal falhar
+    // (sobrecarga/cota). Benchmark 15/10/2026 no fluxo real de agendamento.
+    model: optional('GEMINI_MODEL', 'gemini-3.5-flash-lite'),
+    fallbackModel: optional('GEMINI_FALLBACK_MODEL', 'gemini-3-flash-preview'),
   },
 } as const;
