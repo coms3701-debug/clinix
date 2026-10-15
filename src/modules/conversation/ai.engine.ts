@@ -11,7 +11,6 @@ import { getAvailableSlots, groupSlotsByDate } from '../appointment/availability
 import { createAppointment, cancelAppointment, getPatientAppointments } from '../appointment/appointment.service.js';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { addMinutes } from 'date-fns';
 
 // ─── Tipos da API REST do Gemini ──────────────────────────────────────────────
 
@@ -251,15 +250,34 @@ async function executeTool(
         },
       });
 
-      const service = await prisma.service.findUnique({ where: { id: serviceId } });
-      if (!service) return { error: 'Serviço não encontrado.' };
+      if (isNaN(startsAt.getTime())) {
+        return { error: 'startsAt inválido. Chame list_available_slots e use exatamente o startsAt retornado.' };
+      }
 
-      const endsAt = addMinutes(startsAt, service.durationMin);
+      // O histórico guarda só o texto das mensagens, não o resultado das
+      // ferramentas — então o modelo pode chegar aqui com professionalId ou
+      // startsAt "de memória". Só aceita um horário que esteja de fato livre,
+      // e resolve o profissional a partir dele.
+      const slots = await getAvailableSlots({
+        clinicId: ctx.clinic.id,
+        serviceId,
+        timezone: ctx.clinic.timezone,
+        daysAhead: 30,
+      });
+      const sameTime = slots.filter((s) => s.startsAt.getTime() === startsAt.getTime());
+      const slot = sameTime.find((s) => s.professionalId === professionalId) ?? sameTime[0];
+      if (!slot) {
+        return {
+          error:
+            'Esse horário não está entre os disponíveis. Chame list_available_slots e use exatamente ' +
+            'o startsAt e o professionalId retornados (ou ofereça outro horário ao paciente).',
+        };
+      }
 
       const result = await createAppointment({
         clinicId: ctx.clinic.id,
         patientId: ctx.patient.id,
-        slot: { professionalId, professionalName: '', date: '', time: '', startsAt, endsAt },
+        slot,
         serviceId,
       });
 
@@ -391,6 +409,8 @@ export async function processWithAI(params: {
     `REGRAS:\n` +
     `- NUNCA invente horários — use list_available_slots sempre\n` +
     `- Fluxo ideal: entender serviço → list_available_slots → paciente escolhe → pedir nome+CPF → create_booking\n` +
+    `- Resultados de ferramentas de mensagens anteriores NÃO ficam no histórico: antes de create_booking, ` +
+    `chame list_available_slots de novo para obter o startsAt e o professionalId exatos do horário escolhido. Nunca invente IDs.\n` +
     `- Respostas curtas (máx. 300 caracteres quando possível)\n` +
     `- Horários: "📅 Ter, 29/04 – 09:00 / 10:00 / 11:00"\n` +
     `- Após agendar: envie resumo com serviço, profissional, data e horário\n` +
@@ -431,7 +451,18 @@ export async function processWithAI(params: {
       for (const part of funcParts) {
         const { name, args } = part.functionCall!;
         console.log(`[AI Engine Gemini] Tool: ${name}`, args);
-        const result = await executeTool(name, args, toolCtx);
+        // Erro numa ferramenta volta para o modelo como resultado, para ele
+        // se corrigir — em vez de derrubar a conversa inteira.
+        let result: unknown;
+        try {
+          result = await executeTool(name, args, toolCtx);
+        } catch (err) {
+          console.error(`[AI Engine Gemini] Erro na ferramenta ${name}:`, err);
+          result = {
+            error: `Falha interna ao executar ${name}. Se for agendamento, chame list_available_slots ` +
+              'e tente de novo com os IDs exatos; se persistir, peça desculpas e ofereça a recepção.',
+          };
+        }
         // Gemini exige que functionResponse.response seja sempre um objeto (nunca array)
         const responseObj = Array.isArray(result) ? { result } : (result as object);
         responseParts.push({
