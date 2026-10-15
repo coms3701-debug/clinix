@@ -1,6 +1,6 @@
 import twilio from 'twilio';
 import { config } from '../config.js';
-import type { MessagingProvider, SendTextOptions } from './messaging.interface.js';
+import type { MessagingProvider, SendTemplateOptions, SendTextOptions } from './messaging.interface.js';
 
 const client = twilio(config.twilio.accountSid, config.twilio.authToken);
 
@@ -24,6 +24,17 @@ export const twilioAdapter: MessagingProvider = {
       from: config.twilio.fromNumber,
       to: toNumber,
       body,
+    });
+  },
+
+  async sendTemplate({ to, contentSid, variables }: SendTemplateOptions): Promise<void> {
+    const toNumber = to.startsWith('whatsapp:') ? to : `whatsapp:${to}`;
+
+    await client.messages.create({
+      from: config.twilio.fromNumber,
+      to: toNumber,
+      contentSid,
+      contentVariables: JSON.stringify(variables),
     });
   },
 };

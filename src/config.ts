@@ -27,6 +27,13 @@ export const config = {
     accountSid: required('TWILIO_ACCOUNT_SID'),
     authToken: required('TWILIO_AUTH_TOKEN'),
     fromNumber: required('TWILIO_FROM_NUMBER'), // ex: whatsapp:+5511999999999
+    // Modelos aprovados pela Meta (Twilio Content API) p/ mensagens que a
+    // empresa inicia. Vazio = cai no texto livre (só entrega em até 24h
+    // da última mensagem do paciente).
+    templates: {
+      reminder: optional('TWILIO_TEMPLATE_REMINDER', 'HXa514314e3c73ddaf1a835776eda064e6'),
+      waitlistOpening: optional('TWILIO_TEMPLATE_WAITLIST', 'HXeed55c09b792c997f2210a2a5aa8f63e'),
+    },
   },
 
   timezone: optional('DEFAULT_TIMEZONE', 'America/Sao_Paulo'),

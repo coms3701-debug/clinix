@@ -12,9 +12,10 @@ import { twilioWebhookRoutes } from './modules/webhook/twilio.controller.js';
 import { adminRoutes } from './modules/admin/admin.routes.js';
 import { authRoutes, requireAuth } from './modules/auth/auth.routes.js';
 import { prisma } from './database.js';
-import { twilioAdapter } from './providers/twilio.adapter.js';
-import { addDays, format } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
+import { sendBusinessInitiated } from './providers/outbound.js';
+import { addDays } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { formatInTimeZone, toZonedTime } from 'date-fns-tz';
 import { localDayBounds, localYMD } from './utils/tz.js';
 
 process.stdout.write('🚀 Clinix: iniciando servidor...\n');
@@ -92,7 +93,7 @@ async function scheduleReminders() {
       remindersSent: 0,
     },
     include: {
-      patient: { select: { whatsappNumber: true, fullName: true } },
+      patient: { select: { id: true, whatsappNumber: true, fullName: true } },
       professional: { select: { name: true } },
       clinic: { select: { name: true, timezone: true } },
     },
@@ -102,14 +103,30 @@ async function scheduleReminders() {
 
   for (const appt of appointments) {
     try {
-      const dateLocal = toZonedTime(appt.startsAt, appt.clinic.timezone);
-      const dateFormatted = format(dateLocal, "dd/MM/yyyy 'às' HH:mm");
+      const when = formatInTimeZone(appt.startsAt, appt.clinic.timezone, "EEEE, dd/MM 'às' HH:mm", { locale: ptBR });
+      const firstName = appt.patient.fullName?.split(' ')[0] || 'paciente';
+      // Mesmo texto do modelo aprovado (clinix_lembrete_consulta).
       const msg =
-        `Olá ${appt.patient.fullName || 'paciente'}! 👋\n\n` +
-        `Lembrete: você tem uma consulta *amanhã* (${dateFormatted}) com *${appt.professional.name}* na ${appt.clinic.name}.\n\n` +
-        `Responda:\n✅ CONFIRMAR\n🔄 REMARCAR\n❌ CANCELAR`;
+        `Olá, ${firstName}! Lembrete da sua consulta na ${appt.clinic.name}: ${when}, com ${appt.professional.name}.\n\n` +
+        `Responda CONFIRMAR, REMARCAR ou CANCELAR.`;
 
-      await twilioAdapter.sendText({ to: appt.patient.whatsappNumber, body: msg });
+      // A consulta costuma ter sido marcada dias antes: fora da janela de
+      // 24h do WhatsApp, só o modelo aprovado é entregue.
+      await sendBusinessInitiated({
+        to: appt.patient.whatsappNumber,
+        templateSid: config.twilio.templates.reminder,
+        variables: { '1': firstName, '2': appt.clinic.name, '3': when, '4': appt.professional.name },
+        fallbackText: msg,
+      });
+
+      // Registra na conversa para a Bella entender a resposta do paciente.
+      const conversation = await prisma.conversation.findFirst({
+        where: { clinicId: appt.clinicId, patientId: appt.patient.id },
+        orderBy: { updatedAt: 'desc' },
+      });
+      if (conversation) {
+        await prisma.message.create({ data: { conversationId: conversation.id, direction: 'OUTBOUND', body: msg } });
+      }
       await prisma.appointment.update({
         where: { id: appt.id },
         data: { remindersSent: { increment: 1 } },

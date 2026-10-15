@@ -1435,9 +1435,10 @@ function renderWaitlist(list) {
   const empty = document.getElementById('waitlist-empty');
   const badge = document.getElementById('badge-encaixe');
 
-  // Atualiza badge no menu
-  if (list.length > 0) {
-    badge.textContent = list.length;
+  // Badge no menu: só quem ainda aguarda (avisados aparecem na lista, mas não contam)
+  const waiting = list.filter((e) => e.status === 'WAITING').length;
+  if (waiting > 0) {
+    badge.textContent = waiting;
     badge.style.display = '';
   } else {
     badge.style.display = 'none';
@@ -1465,6 +1466,7 @@ function renderWaitlist(list) {
         <div style="flex:1;min-width:0;">
           <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:2px;">${name}</div>
           <div style="font-size:12px;color:var(--text-muted);">📋 ${service} &nbsp;·&nbsp; 👩‍⚕️ ${prof}</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">🗓 Prefere: ${entry.preferenceLabel || 'qualquer dia · qualquer horário'}${entry.status === 'NOTIFIED' ? ` &nbsp;<span style="padding:1px 8px;border-radius:999px;background:rgba(99,102,241,.18);color:#a5b4fc;font-size:11px;font-weight:600;">Vaga oferecida ${entry.notifiedAt ? new Date(entry.notifiedAt).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) : ''}</span>` : ''}</div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">📱 ${phone} &nbsp;·&nbsp; Na lista desde ${sinceStr}</div>
         </div>
         <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">

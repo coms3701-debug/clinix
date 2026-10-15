@@ -244,6 +244,8 @@ model WaitlistEntry {
   // Preferências do paciente
   preferredFrom  DateTime?
   preferredTo    DateTime?
+  // "manha" | "tarde" | null (qualquer) — vale para qualquer dia da janela
+  preferredPeriod String?
   status         WaitlistStatus @default(WAITING)
   createdAt      DateTime @default(now())
   notifiedAt     DateTime?

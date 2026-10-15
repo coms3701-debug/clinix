@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { prisma } from '../../database.js';
 import { z } from 'zod';
 import { format, subDays, startOfDay, endOfDay, addMinutes } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
+import { formatInTimeZone, toZonedTime } from 'date-fns-tz';
 import { getAvailableSlots } from '../appointment/availability.service.js';
 import { cancelAppointment } from '../appointment/appointment.service.js';
 import { localDayBounds, localYMD } from '../../utils/tz.js';
@@ -406,13 +406,25 @@ export async function adminRoutes(app: FastifyInstance) {
 
   // ── Lista de Encaixe ──────────────────────────────────────
   app.get<{ Params: { id: string } }>('/v1/clinics/:id/waitlist', async (req) => {
+    // Aguardando + avisados nos últimos 7 dias (a clínica precisa ver a quem
+    // a vaga já foi oferecida, para acompanhar a resposta).
     const entries = await prisma.waitlistEntry.findMany({
-      where: { clinicId: req.params.id, status: 'WAITING' },
+      where: {
+        clinicId: req.params.id,
+        OR: [{ status: 'WAITING' }, { status: 'NOTIFIED', notifiedAt: { gte: subDays(new Date(), 7) } }],
+      },
       include: {
         patient: { select: { id: true, fullName: true, whatsappNumber: true } },
       },
       orderBy: { createdAt: 'asc' },
     });
+    const clinic = await prisma.clinic.findUnique({ where: { id: req.params.id }, select: { timezone: true } });
+    const tz = clinic?.timezone ?? config.timezone;
+    const preferenceLabel = (e: (typeof entries)[number]) =>
+      [
+        e.preferredFrom ? `dia ${formatInTimeZone(e.preferredFrom, tz, 'dd/MM')}` : 'qualquer dia',
+        e.preferredPeriod === 'manha' ? 'manhã' : e.preferredPeriod === 'tarde' ? 'tarde' : 'qualquer horário',
+      ].join(' · ');
 
     const [services, professionals] = await Promise.all([
       prisma.service.findMany({ where: { clinicId: req.params.id }, select: { id: true, name: true } }),
@@ -426,6 +438,7 @@ export async function adminRoutes(app: FastifyInstance) {
       ...e,
       service: e.serviceId ? { id: e.serviceId, name: serviceMap[e.serviceId] ?? 'N/A' } : null,
       professional: e.professionalId ? { id: e.professionalId, name: profMap[e.professionalId] ?? 'N/A' } : null,
+      preferenceLabel: preferenceLabel(e),
     }));
   });
 
