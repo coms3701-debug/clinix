@@ -351,6 +351,17 @@ async function executeTool(
         return { error: 'Horário indisponível — alguém acabou de reservar. Use list_available_slots para buscar outro.' };
       }
 
+      // Agendou: a vaga oferecida foi aceita e a espera por este serviço
+      // acabou — sai da lista (senão o painel seguiria mostrando "aguardando").
+      await prisma.waitlistEntry.updateMany({
+        where: {
+          clinicId: ctx.clinic.id,
+          patientId: ctx.patient.id,
+          OR: [{ status: 'NOTIFIED' }, { status: 'WAITING', OR: [{ serviceId: null }, { serviceId }] }],
+        },
+        data: { status: 'FULFILLED' },
+      });
+
       return {
         success: true,
         appointmentId: result.appointment?.id,
