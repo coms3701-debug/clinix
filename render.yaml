@@ -1,10 +1,15 @@
-# Blueprint Render — Clinix (web Node + Postgres grátis)
+# Blueprint Render — Clinix (web Node + Postgres)
 # Deploy: https://dashboard.render.com → New → Blueprint → aponte para este repo.
 # As 3 variáveis com `sync: false` (Twilio) você preenche no painel após o 1º deploy.
+#
+# Planos PAGOS de propósito — o free tier não serve em produção:
+#  - Postgres free EXPIRA (~30 dias) e é apagado: perdemos dados em 08/2026.
+#  - Web free dorme após inatividade; o cold start (~50s) estoura o timeout de
+#    15s do webhook do Twilio e o paciente fica sem resposta.
 
 databases:
   - name: clinix-db
-    plan: free
+    plan: basic-256mb
     databaseName: clinix
     user: clinix
 
@@ -12,7 +17,7 @@ services:
   - type: web
     name: clinix
     runtime: node
-    plan: free
+    plan: starter
     region: oregon
     # --include=dev garante prisma CLI + typescript mesmo com NODE_ENV=production.
     # O postinstall (prisma generate) roda dentro do npm ci.
