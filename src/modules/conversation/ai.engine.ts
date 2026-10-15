@@ -193,6 +193,7 @@ interface ToolCtx {
     name: string;
     assistantName: string;
     timezone: string;
+    address: string | null;
     services: Array<{ id: string; name: string; description: string | null; durationMin: number; active: boolean }>;
   };
   patient: { id: string; fullName?: string | null; cpf?: string | null };
@@ -355,7 +356,9 @@ async function executeTool(
         appointmentId: result.appointment?.id,
         service: result.appointment?.service.name,
         professional: result.appointment?.professional.name,
-        startsAt: result.appointment?.startsAt,
+        // Já no fuso da clínica: o modelo não precisa converter de UTC.
+        when: formatInTimeZone(slot.startsAt, ctx.clinic.timezone, "EEEE, dd/MM/yyyy 'às' HH:mm", { locale: ptBR }),
+        address: ctx.clinic.address ?? ctx.clinic.name,
       };
     }
 
@@ -470,6 +473,7 @@ export async function processWithAI(params: {
     `Seja simpática, profissional e objetiva. Emojis com moderação.\n` +
     `Responda SEMPRE em português brasileiro.\n` +
     `Hoje é ${todayStr} (${localYMD(new Date(), clinic.timezone)}). Fuso horário: ${clinic.timezone}.\n\n` +
+    `Endereço da clínica: ${clinic.address ?? 'consulte a recepção'}\n\n` +
     `Serviços:\n${servicesList}\n\n` +
     `ESTILO DE CONVERSA:\n` +
     `- Converse de forma NATURAL, como uma atendente humana — NUNCA use listas numeradas (1. 2. 3.)\n` +
@@ -491,7 +495,8 @@ export async function processWithAI(params: {
     `chame list_available_slots de novo para obter o startsAt e o professionalId exatos do horário escolhido. Nunca invente IDs.\n` +
     `- Respostas curtas (máx. 300 caracteres quando possível)\n` +
     `- Horários: "📅 Ter, 29/04 – 09:00 / 10:00 / 11:00"\n` +
-    `- Após agendar: envie resumo com serviço, profissional, data e horário\n` +
+    `- Após agendar: envie SEMPRE o resumo com serviço, profissional, data/horário (campo "when") e 📍 endereço (campo "address"), ` +
+    `e avise que o paciente receberá um lembrete na véspera. No WhatsApp, negrito é *um asterisco* (nunca **dois**).\n` +
     `- Paciente identificado pelo WhatsApp (ID: ${patient.id})\n\n` +
     `QUANDO NÃO HÁ HORÁRIOS DISPONÍVEIS (list_available_slots retornar no_slots: true):\n` +
     `- Use EXATAMENTE este texto: "No momento nossa agenda está sem horários disponíveis para os próximos dias. 😔\n\nMas posso te colocar na *lista de encaixe* — se algum paciente cancelar, você será avisado(a) na hora pelo WhatsApp para garantir o horário. Quer entrar na lista? 😊"\n` +
